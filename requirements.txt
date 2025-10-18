@@ -1,0 +1,11 @@
+# Machine Learning Frameworks
+tensorflow-gpu
+tensorflow-hub
+
+# Data Handling and Scientific Computing
+numpy
+pandas
+scikit-learn
+
+# Audio Processing
+librosa
