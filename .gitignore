@@ -59,6 +59,7 @@ cover/
 backend/*.log
 backend/local_settings.py
 backend/.venv/
+backend/venv/
 backend/__pycache__/
 backend/*.sqlite3
 
