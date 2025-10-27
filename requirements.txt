@@ -1,0 +1,7 @@
+# Data Handling and Scientific Computing
+numpy
+pandas
+scikit-learn
+jupyter
+# Audio Processing
+librosa
