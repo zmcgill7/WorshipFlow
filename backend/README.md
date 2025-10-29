@@ -20,8 +20,7 @@ This is the backend which is to be used for managing user login and model infere
    - Make sure settings.py has been hardened before this step as dev configurations are the default
    - python manage.py collectstatic --noinput
    - python manage.py migrate
-   - gunicorn backend.wsgi:application --bind 0.0.0.0:8000
+   - python -m gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --daemon
 
 ## Notes
 - The production webserver is designed to be run behind a reserse proxy such as Nginx.
-- 
