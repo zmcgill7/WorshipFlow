@@ -1,7 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
 
-const ALL_INSTRUMENTS = ['vocals', 'drums', 'bass', 'piano', 'guitar', 'other'] as const
-
 type AnalysisResult = {
   instruments: string[]
 }
@@ -55,13 +53,34 @@ function App() {
     setError(null)
     setResult(null)
     try {
-      // Simulate backend processing
-      await new Promise((r) => setTimeout(r, 1200))
-      const instruments = ALL_INSTRUMENTS.filter((_, i) => (file.name.length + i) % 2 === 0)
-      if (instruments.length === 0) instruments.push('other')
-      setResult({ instruments })
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await fetch('http://localhost:8000/api/analyze/', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to analyze file')
+      }
+
+      const data = await response.json()
+
+      // Extract instruments from the first result
+      if (data.results && data.results.length > 0) {
+        const firstResult = data.results[0]
+        if (firstResult.error) {
+          throw new Error(firstResult.error)
+        }
+        if (firstResult.predictions) {
+          const instruments = firstResult.predictions.map((p: any) => p.instrument)
+          setResult({ instruments })
+        }
+      }
     } catch (err) {
-      setError('Failed to analyze file (placeholder).')
+      setError(err instanceof Error ? err.message : 'Failed to analyze file.')
     } finally {
       setAnalyzing(false)
     }
