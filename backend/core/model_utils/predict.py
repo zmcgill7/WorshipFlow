@@ -108,7 +108,7 @@ class WorshipFlowPredictor:
         
         return avg_embedding
     
-    def predict(self, audio_path: str, top_k: int = 3) -> List[Dict]:
+    def predict(self, audio_path: str, top_k: int = 1) -> List[Dict]:
         """
         Predict instruments in audio file
         
@@ -141,7 +141,7 @@ class WorshipFlowPredictor:
         
         return results
     
-    def predict_batch(self, audio_paths: List[str], top_k: int = 3) -> List[List[Dict]]:
+    def predict_batch(self, audio_paths: List[str], top_k: int = 1) -> List[List[Dict]]:
         """
         Predict instruments for multiple audio files
         

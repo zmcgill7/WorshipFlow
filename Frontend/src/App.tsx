@@ -29,8 +29,8 @@ function App() {
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0] ?? null
     if (!f) return
-    if (!/\.(mp3|mp4)$/i.test(f.name)) {
-      setError('Please select a .mp3 or .mp4 file')
+    if (!/\.(mp3|mp4|wav)$/i.test(f.name)) {
+      setError('Please select a .mp3, .mp4, or .wav file')
       return
     }
     handleFile(f)
@@ -40,8 +40,8 @@ function App() {
     e.preventDefault()
     const f = e.dataTransfer.files?.[0] ?? null
     if (!f) return
-    if (!/\.(mp3|mp4)$/i.test(f.name)) {
-      setError('Please drop a .mp3 or .mp4 file')
+    if (!/\.(mp3|mp4|wav)$/i.test(f.name)) {
+      setError('Please drop a .mp3, .mp4, or .wav file')
       return
     }
     handleFile(f)
@@ -90,7 +90,7 @@ function App() {
     <div className="app">
       <header>
         <h1>Worship Flow</h1>
-        <p>Upload an .mp3 or .mp4 to preview and simulate instrument detection.</p>
+        <p>Upload an .mp3, .mp4, or .wav to preview and simulate instrument detection.</p>
       </header>
 
       <section>
@@ -98,10 +98,10 @@ function App() {
           className="dropzone"
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleDrop}
-          aria-label="Drop .mp3 or .mp4 file here"
+          aria-label="Drop .mp3, .mp4, or .wav file here"
         >
-          <p>Drag & drop a .mp3 or .mp4 here, or select a file</p>
-          <input type="file" accept=".mp3,.mp4,audio/mpeg,video/mp4" onChange={handleInputChange} />
+          <p>Drag & drop a .mp3, .mp4, or .wav here, or select a file</p>
+          <input type="file" accept=".mp3,.mp4,.wav,audio/mpeg,video/mp4,audio/wav,audio/x-wav,audio/wave" onChange={handleInputChange} />
         </div>
 
         {file && (
@@ -118,7 +118,18 @@ function App() {
         )}
 
         <div className="actions">
-          <button onClick={analyze} disabled={!file || analyzing}>
+          <button
+            className="btn-reactive"
+            onMouseMove={(e) => {
+              const r = (e.currentTarget as HTMLButtonElement).getBoundingClientRect()
+              const x = e.clientX - r.left
+              const y = e.clientY - r.top
+              e.currentTarget.style.setProperty('--mx', `${x}px`)
+              e.currentTarget.style.setProperty('--my', `${y}px`)
+            }}
+            onClick={analyze}
+            disabled={!file || analyzing}
+          >
             {analyzing ? 'Analyzing…' : 'Analyze instruments'}
           </button>
         </div>
@@ -135,7 +146,7 @@ function App() {
                 </span>
               ))}
             </div>
-            <p className="note">Backend integration is TODO. This is a placeholder.</p>
+            <p className="note"></p>
           </div>
         )}
       </section>
