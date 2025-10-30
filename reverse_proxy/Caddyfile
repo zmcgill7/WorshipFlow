@@ -1,7 +1,7 @@
 # site in which requests are coming from: worshipflow.zacharymcgill.site 
 :80 {
 	# Improve performance
-    encode zstd gzip
+	encode zstd gzip
 
 	# Django (must come before static files)
 	handle /api/* {
