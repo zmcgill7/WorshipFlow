@@ -1,12 +1,23 @@
 #!/bin/bash
 
-cd '/mnt/c/Users/zackm/OneDrive/Documents/University/PFW/Fall 2025/Applications of Deep Learning/WorshipFlow/'
+# Assuming venv is already activated in the terminal where this script is run
 
-# Start Gunicorn in background
+cd ~/WorshipFlow/
+
+pkill -f "gunicorn config.wsgi" || true
+pkill caddy || true
+sleep 1
+
 cd backend/
-gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 &
-sleep 2
+
+# Start Gunicorn in background (Django server)
+python -m gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --daemon
 
 cd ../reverse_proxy/
-# caddy run --config ./Caddyfile
-sudo caddy run --config ./Caddyfile
+
+caddy start --config ./Caddyfile
+
+echo "Services started:"
+echo "Gunicorn (Django) running on http://0.0.0.0:8000"
+echo "Caddy running on http://localhost:80"
+echo "Reach Caddy through worshipflow.zachmcgill.com"

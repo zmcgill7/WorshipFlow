@@ -20,40 +20,38 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-
-# Development settings - replace with production settings when deploying
-# SECURITY WARNING: keep the secret key used in production secret!
-# SECURITY WARNING: don't run with debug turned on in production!
-
-SECRET_KEY = 'django-insecure-&-^v8)a*jvmkb%fz97v5k4$5x@n=4_fi+fy3hpc-7ik(wk*rz4'
-DEBUG = True
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
-
-# CORS Settings for Development
+# CORS Settings
 CORS_ALLOWED_ORIGINS = [
+    "https://worshipflow.zacharymcgill.site",  # Production site
     "http://localhost:5173",  # Vite default dev server
     "http://127.0.0.1:5173",
+    "http://localhost:80",    # Caddy default
 ]
 CORS_ALLOW_CREDENTIALS = True
 
+# ************************** Development settings - replace with production settings when deploying **************************
 
-# Production settings
+# SECRET_KEY = 'django-insecure-&-^v8)a*jvmkb%fz97v5k4$5x@n=4_fi+fy3hpc-7ik(wk*rz4'
+# DEBUG = True
+# ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
-# SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
-# DEBUG = False
-# ALLOWED_HOSTS = ['worshipflow.zacharymcgill.site', 'localhost']
-# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-# USE_X_FORWARDED_HOST = True
-# CSRF_TRUSTED_ORIGINS = ['https://worshipflow.zacharymcgill.site']
-# # Security Headers
-# SECURE_SSL_REDIRECT = True
-# SESSION_COOKIE_SECURE = True
-# CSRF_COOKIE_SECURE = True
-# SECURE_HSTS_SECONDS = 31536000        # 1 year
-# SECURE_HSTS_INCLUDE_SUBDOMAINS = True  # if you also serve subdomains over HTTPS
-# SECURE_CONTENT_TYPE_NOSNIFF = True
-# SECURE_REFERRER_POLICY = "same-origin"
-# X_FRAME_OPTIONS = "DENY"
+# ************************** Production settings - uncomment and set appropriately when deploying **************************
+
+SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
+DEBUG = False
+ALLOWED_HOSTS = ['worshipflow.zacharymcgill.site', 'localhost']
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+CSRF_TRUSTED_ORIGINS = ['https://worshipflow.zacharymcgill.site']
+# Security Headers
+SECURE_SSL_REDIRECT = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+SECURE_HSTS_SECONDS = 31536000        # 1 year
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True  # if you also serve subdomains over HTTPS
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "same-origin"
+X_FRAME_OPTIONS = "DENY"
 
 
 # Application definition

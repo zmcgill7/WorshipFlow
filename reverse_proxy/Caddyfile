@@ -1,19 +1,21 @@
 # site in which requests are coming from: worshipflow.zacharymcgill.site 
 :80 {
 	# Improve performance
-    encode zstd gzip
+	encode zstd gzip
 
-	# React static
-    # Assumes caddy is always ran from a current working directory of reverse_proxy in order to not use absolute path
-	root * ../Frontend/dist
-	file_server
-	try_files {path} /index.html
-
-	# Django
-	handle_path /api/* {
+	# Django (must come before static files)
+	handle /api/* {
 		reverse_proxy 127.0.0.1:8000 {
 			header_up X-Forwarded-Proto https
 			header_up X-Real-IP {header.CF-Connecting-IP}
 		}
+	}
+
+	# React static files
+	# Assumes caddy is always ran from a current working directory of reverse_proxy in order to not use absolute path
+	handle {
+		root * ../Frontend/dist
+		try_files {path} /index.html
+		file_server
 	}
 }

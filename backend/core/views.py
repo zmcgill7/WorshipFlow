@@ -19,7 +19,7 @@ def getInstrumentsFromFile(file):
 
     try:
         logger.info(f"Processing file: {file.name}")
-        return predictor.predict(tmp_path)
+        return predictor.predict(tmp_path, top_k=3)
     finally:
         if os.path.exists(tmp_path):
             os.unlink(tmp_path)
