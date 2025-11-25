@@ -1,0 +1,99 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info
+dist-python
+build
+*.egg
+.pytest_cache
+.coverage
+htmlcov
+.tox
+.mypy_cache
+.dmypy.json
+dmypy.json
+
+# Virtual environments
+venv
+env
+.venv
+ENV
+env.bak
+venv.bak
+
+# Node
+node_modules
+npm-debug.log
+yarn-error.log
+.pnpm-debug.log
+
+# Build artifacts
+frontend/dist
+frontend/build
+*.tsbuildinfo
+
+# IDEs and editors
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings
+*.sublime-*
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+*.env
+
+# Logs
+*.log
+logs
+*.log.*
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+db.sqlite3
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+cloudbuild.yaml
+
+# Documentation and slides
+README.md
+*.md
+slides
+LICENSE
+
+# Training files (not needed in production)
+training
+
+# Reverse proxy config (if using Cloud Run)
+reverse_proxy
+
+# Temporary files
+tmp
+temp
+*.tmp
+*.bak
+*.swp
