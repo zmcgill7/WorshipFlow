@@ -1,18 +1,11 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-// Dummy credentials (for demo login)
-const DUMMY_CREDENTIALS = {
-  username: 'worshipadmin',
-  email: 'admin@worshipflow.com',
-  password: 'worship123',
-}
-
 const STORAGE_KEY = 'worshipUser'
 
-function Login() {
+function Signup() {
   const navigate = useNavigate()
-  const [username, setUsername] = useState('')
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -21,36 +14,26 @@ function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+
+    if (!name.trim() || !email.trim() || !password.trim()) {
+      setError('Please fill in all fields.')
+      return
+    }
+
     setIsLoading(true)
 
     // Simulate network delay
     await new Promise((resolve) => setTimeout(resolve, 800))
 
     try {
-      const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored) {
-        const user = JSON.parse(stored) as { name: string; email: string; password: string }
-        if (email === user.email && password === user.password) {
-          localStorage.setItem('isAuthenticated', 'true')
-          navigate('/dashboard')
-          return
-        }
-      }
+      // Store a dummy "user" locally (no real backend yet)
+      const user = { name: name.trim(), email: email.trim(), password }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(user))
+      localStorage.setItem('isAuthenticated', 'true')
 
-      // Fallback to hard-coded demo user
-      if (
-        username === DUMMY_CREDENTIALS.username &&
-        email === DUMMY_CREDENTIALS.email &&
-        password === DUMMY_CREDENTIALS.password
-      ) {
-        localStorage.setItem('isAuthenticated', 'true')
-        navigate('/dashboard')
-        return
-      }
-
-      setError('Invalid credentials. Please try again.')
+      navigate('/dashboard')
     } catch (err) {
-      setError('Unable to sign in in demo mode.')
+      setError('Unable to complete signup in demo mode.')
     } finally {
       setIsLoading(false)
     }
@@ -76,20 +59,21 @@ function Login() {
               </defs>
             </svg>
           </div>
-          <h1>Welcome back</h1>
-          <p>Sign in to continue to your Worship Flow dashboard</p>
+          <h1>Create your account</h1>
+          <p>Sign up to start using Worship Flow</p>
         </div>
 
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
-            <label htmlFor="username">Username (demo)</label>
+            <label htmlFor="name">Name</label>
             <input
               type="text"
-              id="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="worshipadmin or leave blank if you signed up"
-              autoComplete="username"
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter your name"
+              required
+              autoComplete="name"
             />
           </div>
 
@@ -113,9 +97,9 @@ function Login() {
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
+              placeholder="Create a password"
               required
-              autoComplete="current-password"
+              autoComplete="new-password"
             />
           </div>
 
@@ -126,18 +110,18 @@ function Login() {
             className="btn-login"
             disabled={isLoading}
           >
-            {isLoading ? 'Signing in...' : 'Sign In'}
+            {isLoading ? 'Creating account...' : 'Sign Up'}
           </button>
         </form>
 
         <div className="auth-switch">
-          <span>New to Worship Flow?</span>
+          <span>Already a user?</span>
           <button
             type="button"
             className="link-button"
-            onClick={() => navigate('/signup')}
+            onClick={() => navigate('/login')}
           >
-            Create an account
+            Sign in
           </button>
         </div>
       </div>
@@ -145,4 +129,4 @@ function Login() {
   )
 }
 
-export default Login
+export default Signup
