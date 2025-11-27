@@ -43,8 +43,6 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY") or os.environ.get("SECRET_KEY",
 # Allow toggling DEBUG via environment variable (defaults to True for local development)
 DEBUG = os.environ.get("DEBUG", "True") == "True"
 
-# ALLOWED_HOSTS can be provided via environment or fall back to localhosts
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
 
 # Production-only security settings are enabled when DEBUG is False
 if not DEBUG:
