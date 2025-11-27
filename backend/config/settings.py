@@ -16,13 +16,11 @@ import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
 # CORS Settings
 CORS_ALLOWED_ORIGINS = [
+    "http://127.0.0.1",
     "https://worshipflow.zacharymcgill.site",  # Production site
+    "https://worshipflow.site",  # Production site
     "http://localhost:5173",  # Vite default dev server
     "http://127.0.0.1:5173",
     "http://localhost:80",    # Caddy default
@@ -32,14 +30,14 @@ CORS_ALLOW_CREDENTIALS = True
 # ************************** Development settings - replace with production settings when deploying **************************
 
 # SECRET_KEY = 'django-insecure-&-^v8)a*jvmkb%fz97v5k4$5x@n=4_fi+fy3hpc-7ik(wk*rz4'
-# DEBUG = True
-# ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+DEBUG = True
 
 # ************************** Production settings - uncomment and set appropriately when deploying **************************
 
 SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
-DEBUG = False
-ALLOWED_HOSTS = ['worshipflow.zacharymcgill.site', 'localhost']
+# DEBUG = False
+ALLOWED_HOSTS = ['worshipflow.zacharymcgill.site',
+                 'localhost', "127.0.0.1", "localhost", "worshipflow.site"]
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 USE_X_FORWARDED_HOST = True
 CSRF_TRUSTED_ORIGINS = ['https://worshipflow.zacharymcgill.site']
@@ -82,7 +80,9 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            BASE_DIR.parent / 'frontend' / 'dist',
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
