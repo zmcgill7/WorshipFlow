@@ -2,9 +2,12 @@ from django.http import JsonResponse
 from django.apps import apps
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
+from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 import tempfile
 import os
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -72,3 +75,87 @@ def analyzeFiles(httpRequest):
             {"error": "Internal server error"},
             status=500
         )
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def signup(request):
+    """Create a new user account using Django's auth system."""
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON body."}, status=400)
+
+    name = (data.get("name") or "").strip()
+    email = (data.get("email") or "").strip().lower()
+    password = data.get("password") or ""
+
+    if not name or not email or not password:
+        return JsonResponse(
+            {"error": "Name, email, and password are required."}, status=400
+        )
+
+    if User.objects.filter(email=email).exists():
+        return JsonResponse(
+            {"error": "A user with this email already exists."}, status=400
+        )
+
+    # Use email as the username to keep things simple
+    user = User.objects.create_user(
+        username=email,
+        email=email,
+        password=password,
+        first_name=name,
+    )
+
+    auth_login(request, user)
+
+    return JsonResponse(
+        {
+            "id": user.id,
+            "name": user.first_name or user.username,
+            "email": user.email,
+        },
+        status=201,
+    )
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def login(request):
+    """Log in an existing user using email and password."""
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON body."}, status=400)
+
+    email = (data.get("email") or "").strip().lower()
+    password = data.get("password") or ""
+
+    if not email or not password:
+        return JsonResponse(
+            {"error": "Email and password are required."}, status=400
+        )
+
+    user = authenticate(request, username=email, password=password)
+    if user is None:
+        return JsonResponse({"error": "Invalid email or password."}, status=400)
+
+    auth_login(request, user)
+
+    return JsonResponse(
+        {
+            "id": user.id,
+            "name": user.first_name or user.username,
+            "email": user.email,
+        },
+        status=200,
+    )
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def logout(request):
+    """Log out the current user (if any)."""
+    auth_logout(request)
+    return JsonResponse({"success": True}, status=200)

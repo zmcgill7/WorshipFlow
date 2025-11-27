@@ -22,18 +22,37 @@ function Signup() {
 
     setIsLoading(true)
 
-    // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, 800))
-
     try {
-      // Store a dummy "user" locally (no real backend yet)
-      const user = { name: name.trim(), email: email.trim(), password }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(user))
+      const response = await fetch('/api/signup/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim(),
+          password,
+        }),
+      })
+
+      const data = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        setError(data.error || 'Unable to sign up. Please try again.')
+        return
+      }
+
+      // Persist authenticated user information locally (without password)
       localStorage.setItem('isAuthenticated', 'true')
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ id: data.id, name: data.name, email: data.email }),
+      )
 
       navigate('/dashboard')
     } catch (err) {
-      setError('Unable to complete signup in demo mode.')
+      setError('Unable to sign up. Please try again later.')
     } finally {
       setIsLoading(false)
     }

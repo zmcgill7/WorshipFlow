@@ -1,13 +1,22 @@
-import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import App from './App'
 
 function Dashboard() {
   const navigate = useNavigate()
 
-  const handleLogout = () => {
-    localStorage.removeItem('isAuthenticated')
-    navigate('/')
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/logout/', {
+        method: 'POST',
+        credentials: 'include',
+      })
+    } catch (err) {
+      // Ignore network errors on logout; still clear local state
+    } finally {
+      localStorage.removeItem('isAuthenticated')
+      localStorage.removeItem('worshipUser')
+      navigate('/')
+    }
   }
 
   return (

@@ -1,13 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-// Dummy credentials (for demo login)
-const DUMMY_CREDENTIALS = {
-  username: 'worshipadmin',
-  email: 'admin@worshipflow.com',
-  password: 'worship123',
-}
-
 const STORAGE_KEY = 'worshipUser'
 
 function Login() {
@@ -23,34 +16,36 @@ function Login() {
     setError('')
     setIsLoading(true)
 
-    // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, 800))
-
     try {
-      const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored) {
-        const user = JSON.parse(stored) as { name: string; email: string; password: string }
-        if (email === user.email && password === user.password) {
-          localStorage.setItem('isAuthenticated', 'true')
-          navigate('/dashboard')
-          return
-        }
-      }
+      const response = await fetch('/api/login/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          // "username" is no longer used for auth; we authenticate via email + password
+          email: email.trim(),
+          password,
+        }),
+      })
 
-      // Fallback to hard-coded demo user
-      if (
-        username === DUMMY_CREDENTIALS.username &&
-        email === DUMMY_CREDENTIALS.email &&
-        password === DUMMY_CREDENTIALS.password
-      ) {
-        localStorage.setItem('isAuthenticated', 'true')
-        navigate('/dashboard')
+      const data = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        setError(data.error || 'Invalid email or password. Please try again.')
         return
       }
 
-      setError('Invalid credentials. Please try again.')
+      localStorage.setItem('isAuthenticated', 'true')
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ id: data.id, name: data.name, email: data.email }),
+      )
+
+      navigate('/dashboard')
     } catch (err) {
-      setError('Unable to sign in in demo mode.')
+      setError('Unable to sign in. Please try again later.')
     } finally {
       setIsLoading(false)
     }
