@@ -77,7 +77,7 @@ function Login() {
 
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
-            <label htmlFor="username">Username (demo)</label>
+            <label htmlFor="username">Username </label>
             <input
               type="text"
               id="username"

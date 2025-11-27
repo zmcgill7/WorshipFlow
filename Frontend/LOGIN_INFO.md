@@ -1,12 +1,5 @@
 # Login Information
 
-## Demo Credentials
-
-Use these credentials to access the Worship Flow dashboard:
-
-- **Username:** `worshipadmin`
-- **Email:** `admin@worshipflow.com`
-- **Password:** `worship123`
 
 ## How to Use
 
