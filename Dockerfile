@@ -30,4 +30,5 @@ COPY --from=build-frontend /app/frontend/dist /app/frontend/dist
 RUN DJANGO_SECRET_KEY=dummy-secret-key python manage.py collectstatic --noinput
 
 # Cloud Run entrypoint
-CMD ["python", "-m", "gunicorn", "--bind", "0.0.0.0:8080", "config.wsgi:application"]
+# CMD ["python", "-m", "gunicorn", "--bind", "0.0.0.0:8080", "config.wsgi:application"]
+CMD ["python", "-m", "gunicorn", "--bind", "0.0.0.0:${PORT:-8080}", "config.wsgi:application"]
