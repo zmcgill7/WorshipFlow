@@ -27,26 +27,25 @@ CORS_ALLOWED_ORIGINS = [
 ]
 CORS_ALLOW_CREDENTIALS = True
 
-# ************************** Development settings - replace with production settings when deploying **************************
-
-# SECRET_KEY = 'django-insecure-&-^v8)a*jvmkb%fz97v5k4$5x@n=4_fi+fy3hpc-7ik(wk*rz4'
-DEBUG = True
-
 # ************************** Production settings - uncomment and set appropriately when deploying **************************
 
 SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
-# DEBUG = False
+DEBUG = True
 ALLOWED_HOSTS = ['worshipflow.zacharymcgill.site',
                  'localhost', "127.0.0.1", "localhost", "worshipflow.site"]
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 USE_X_FORWARDED_HOST = True
-CSRF_TRUSTED_ORIGINS = ['https://worshipflow.zacharymcgill.site']
-# Security Headers
-SECURE_SSL_REDIRECT = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-SECURE_HSTS_SECONDS = 31536000        # 1 year
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True  # if you also serve subdomains over HTTPS
+CSRF_TRUSTED_ORIGINS = [
+    'https://worshipflow.zacharymcgill.site', "http://127.0.0.1:8000"]
+
+
+# SECURE_SSL_REDIRECT = True
+# SESSION_COOKIE_SECURE = True
+# CSRF_COOKIE_SECURE = True
+# SECURE_HSTS_SECONDS = 31536000        # 1 year
+# SECURE_HSTS_INCLUDE_SUBDOMAINS = True  # if you also serve subdomains over HTTPS
+
+
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "same-origin"
 X_FRAME_OPTIONS = "DENY"
@@ -66,6 +65,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -80,9 +80,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [
-            BASE_DIR.parent / 'frontend' / 'dist',
-        ],
+        'DIRS': [BASE_DIR.parent / "frontend" / "dist",],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -142,8 +140,15 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_URL = "/assets/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+
+STATICFILES_DIRS = [
+    BASE_DIR.parent / "frontend" / "dist" / "assets",  # ../frontend/dist/assets
+]
+
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # Media files (user uploads)
 MEDIA_URL = 'media/'
