@@ -29,6 +29,11 @@ COPY --from=build-frontend /app/frontend/dist /app/frontend/dist
 # Get static files collected
 RUN DJANGO_SECRET_KEY=dummy-secret-key python manage.py collectstatic --noinput
 
+ENV NUMBA_DISABLE_JIT=1
+ENV NUMBA_CACHE_DIR=/tmp/numba_cache
+ENV OMP_NUM_THREADS=1
+ENV OPENBLAS_NUM_THREADS=1
+ENV MKL_NUM_THREADS=1
+
 # Cloud Run entrypoint
-# CMD ["python", "-m", "gunicorn", "--bind", "0.0.0.0:8080", "config.wsgi:application"]
-CMD ["python", "-m", "gunicorn", "--bind", "0.0.0.0:8080", "config.wsgi:application"]
+CMD ["python", "-m", "gunicorn", "--bind", "0.0.0.0:8080", "config.wsgi:application" "--workers", "1"]
