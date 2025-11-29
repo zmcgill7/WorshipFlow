@@ -22,12 +22,11 @@ CORS_ALLOWED_ORIGINS = [
     "https://worshipflow.zacharymcgill.site",  # Production site
     "https://worshipflow.site",  # Production site
     "http://localhost:5173",  # Vite default dev server
-    "http://127.0.0.1:5173",
     "http://localhost:80",    # Caddy default
 ]
 CORS_ALLOW_CREDENTIALS = True
 
-# ************************** Production settings - uncomment and set appropriately when deploying **************************
+# ************************** Production settings ********************************
 
 SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
 DEBUG = True
@@ -39,11 +38,11 @@ CSRF_TRUSTED_ORIGINS = [
     'https://worshipflow.zacharymcgill.site', "http://127.0.0.1:8000"]
 
 
-# SECURE_SSL_REDIRECT = True
-# SESSION_COOKIE_SECURE = True
-# CSRF_COOKIE_SECURE = True
-# SECURE_HSTS_SECONDS = 31536000        # 1 year
-# SECURE_HSTS_INCLUDE_SUBDOMAINS = True  # if you also serve subdomains over HTTPS
+SECURE_SSL_REDIRECT = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+SECURE_HSTS_SECONDS = 31536000        # 1 year
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True  # if you also serve subdomains over HTTPS
 
 
 SECURE_CONTENT_TYPE_NOSNIFF = True
