@@ -31,27 +31,39 @@ CORS_ALLOW_CREDENTIALS = True
 
 # ************************** Development settings - replace with production settings when deploying **************************
 
-# SECRET_KEY = 'django-insecure-&-^v8)a*jvmkb%fz97v5k4$5x@n=4_fi+fy3hpc-7ik(wk*rz4'
-# DEBUG = True
-# ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
-# ************************** Production settings - uncomment and set appropriately when deploying **************************
+# ************************** Production / Development settings **************************
 
-SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
-DEBUG = False
-ALLOWED_HOSTS = ['worshipflow.zacharymcgill.site', 'localhost']
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-USE_X_FORWARDED_HOST = True
-CSRF_TRUSTED_ORIGINS = ['https://worshipflow.zacharymcgill.site']
-# Security Headers
-SECURE_SSL_REDIRECT = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-SECURE_HSTS_SECONDS = 31536000        # 1 year
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True  # if you also serve subdomains over HTTPS
-SECURE_CONTENT_TYPE_NOSNIFF = True
-SECURE_REFERRER_POLICY = "same-origin"
-X_FRAME_OPTIONS = "DENY"
+# Load environment variables from .env in development (optional). Install python-dotenv
+from dotenv import load_dotenv
+load_dotenv(BASE_DIR / '.env')
+
+# Read secret and debug flags from environment. Falls back to sensible development defaults
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY") or os.environ.get("SECRET_KEY", "dev-secret")
+# Allow toggling DEBUG via environment variable (defaults to True for local development)
+DEBUG = os.environ.get("DEBUG", "True") == "True"
+
+
+# Production-only security settings are enabled when DEBUG is False
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    USE_X_FORWARDED_HOST = True
+    CSRF_TRUSTED_ORIGINS = ['https://worshipflow.zacharymcgill.site']
+    # Security Headers
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000        # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True  # if you also serve subdomains over HTTPS
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_REFERRER_POLICY = "same-origin"
+    X_FRAME_OPTIONS = "DENY"
+else:
+    # Development-friendly defaults
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+    X_FRAME_OPTIONS = "SAMEORIGIN"
 
 
 # Application definition
