@@ -17,34 +17,30 @@ import os
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # CORS Settings
-CORS_ALLOWED_ORIGINS = [
-    "http://127.0.0.1",
-    "https://worshipflow.zacharymcgill.site",  # Production site
-    "https://worshipflow.site",  # Production site
-    "http://localhost:5173",  # Vite default dev server
-    "http://localhost:80",    # Caddy default
-]
-CORS_ALLOW_CREDENTIALS = True
+
 
 # ************************** Production settings ********************************
 
 SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
 DEBUG = True
-ALLOWED_HOSTS = ['worshipflow.zacharymcgill.site',
-                 'localhost', "127.0.0.1", "localhost", "worshipflow.site"]
+ALLOWED_HOSTS = [
+    'worshipflow.zacharymcgill.site',
+    "worshipflow.site",
+    "localhost",  # Django dev server (http://localhost:8000)
+]
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",  # Vite default dev server
+    "http://localhost:80",    # Caddy default
+]
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",  # Vite default dev server
+    "http://localhost:80",    # Caddy default
+]
+CORS_ALLOW_CREDENTIALS = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 USE_X_FORWARDED_HOST = True
-CSRF_TRUSTED_ORIGINS = [
-    'https://worshipflow.zacharymcgill.site', "http://127.0.0.1:8000"]
-
-
-# SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
-# SECURE_HSTS_SECONDS = 31536000        # 1 year
-# SECURE_HSTS_INCLUDE_SUBDOMAINS = True  # if you also serve subdomains over HTTPS
-
-
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "same-origin"
 X_FRAME_OPTIONS = "DENY"
