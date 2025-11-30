@@ -37,3 +37,4 @@ tensorboard
 wrapt
 six
 typing_extensions
+python-dotenv
