@@ -38,11 +38,11 @@ CSRF_TRUSTED_ORIGINS = [
     'https://worshipflow.zacharymcgill.site', "http://127.0.0.1:8000"]
 
 
-SECURE_SSL_REDIRECT = True
+# SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
-SECURE_HSTS_SECONDS = 31536000        # 1 year
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True  # if you also serve subdomains over HTTPS
+# SECURE_HSTS_SECONDS = 31536000        # 1 year
+# SECURE_HSTS_INCLUDE_SUBDOMAINS = True  # if you also serve subdomains over HTTPS
 
 
 SECURE_CONTENT_TYPE_NOSNIFF = True
