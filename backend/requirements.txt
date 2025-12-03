@@ -3,6 +3,7 @@ Django
 django-cors-headers
 asgiref
 gunicorn
+whitenoise
 
 # TensorFlow & Deep Learning (compatible with numpy 1.26.4)
 tensorflow

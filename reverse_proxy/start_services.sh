@@ -2,16 +2,14 @@
 
 # Assuming venv is already activated in the terminal where this script is run
 
-cd ~/WorshipFlow/
-
 pkill -f "gunicorn config.wsgi" || true
 pkill caddy || true
 sleep 1
 
-cd backend/
+cd ../backend/
 
 # Start Gunicorn in background (Django server)
-python -m gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --daemon
+python -m gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 1 --daemon
 
 cd ../reverse_proxy/
 

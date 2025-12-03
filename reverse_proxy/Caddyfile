@@ -14,7 +14,7 @@
 	# React static files
 	# Assumes caddy is always ran from a current working directory of reverse_proxy in order to not use absolute path
 	handle {
-		root * ../Frontend/dist
+		root * ../frontend/dist
 		try_files {path} /index.html
 		file_server
 	}

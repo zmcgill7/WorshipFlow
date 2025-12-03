@@ -16,54 +16,34 @@ import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
 # CORS Settings
-CORS_ALLOWED_ORIGINS = [
-    "https://worshipflow.zacharymcgill.site",  # Production site
+
+
+# ************************** Production settings ********************************
+
+SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
+DEBUG = True
+ALLOWED_HOSTS = [
+    'worshipflow.zacharymcgill.site',
+    "worshipflow.site",
+    "localhost",  # Django dev server (http://localhost:8000)
+]
+CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",  # Vite default dev server
-    "http://127.0.0.1:5173",
+    "http://localhost:80",    # Caddy default
+]
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",  # Vite default dev server
     "http://localhost:80",    # Caddy default
 ]
 CORS_ALLOW_CREDENTIALS = True
-
-# ************************** Development settings - replace with production settings when deploying **************************
-
-
-# ************************** Production / Development settings **************************
-
-# Load environment variables from .env in development (optional). Install python-dotenv
-from dotenv import load_dotenv
-load_dotenv(BASE_DIR / '.env')
-
-# Read secret and debug flags from environment. Falls back to sensible development defaults
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY") or os.environ.get("SECRET_KEY", "dev-secret")
-# Allow toggling DEBUG via environment variable (defaults to True for local development)
-DEBUG = os.environ.get("DEBUG", "True") == "True"
-
-
-# Production-only security settings are enabled when DEBUG is False
-if not DEBUG:
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    USE_X_FORWARDED_HOST = True
-    CSRF_TRUSTED_ORIGINS = ['https://worshipflow.zacharymcgill.site']
-    # Security Headers
-    SECURE_SSL_REDIRECT = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    SECURE_HSTS_SECONDS = 31536000        # 1 year
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True  # if you also serve subdomains over HTTPS
-    SECURE_CONTENT_TYPE_NOSNIFF = True
-    SECURE_REFERRER_POLICY = "same-origin"
-    X_FRAME_OPTIONS = "DENY"
-else:
-    # Development-friendly defaults
-    SECURE_SSL_REDIRECT = False
-    SESSION_COOKIE_SECURE = False
-    CSRF_COOKIE_SECURE = False
-    X_FRAME_OPTIONS = "SAMEORIGIN"
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "same-origin"
+X_FRAME_OPTIONS = "DENY"
 
 
 # Application definition
@@ -80,6 +60,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -94,7 +75,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR.parent / "frontend" / "dist",],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -154,8 +135,15 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_URL = "/assets/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+
+STATICFILES_DIRS = [
+    BASE_DIR.parent / "frontend" / "dist" / "assets",  # ../frontend/dist/assets
+]
+
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # Media files (user uploads)
 MEDIA_URL = 'media/'
