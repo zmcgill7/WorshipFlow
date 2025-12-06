@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+from django.core.management.utils import get_random_secret_key
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,20 +22,31 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ************************** Production settings ********************************
 
-SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
-DEBUG = True
+# Use environment variable if provided, otherwise fall back to a generated key.
+# This keeps local/dev and containerized environments working even when the
+# DJANGO_SECRET_KEY env var is not explicitly set.
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", get_random_secret_key())
+
+# Default to DEBUG=True for local/dev, let production override via env.
+DEBUG = os.environ.get("DJANGO_DEBUG", "True").lower() == "true"
+
 ALLOWED_HOSTS = [
     'worshipflow.zacharymcgill.site',
     "worshipflow.site",
     "localhost",  # Django dev server (http://localhost:8000)
+    "127.0.0.1",
 ]
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",  # Vite default dev server
     "http://localhost:80",    # Caddy default
+    "https://worshipflow.zacharymcgill.site",
+    "https://worshipflow.site",
 ]
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # Vite default dev server
     "http://localhost:80",    # Caddy default
+    "https://worshipflow.zacharymcgill.site",
+    "https://worshipflow.site",
 ]
 CORS_ALLOW_CREDENTIALS = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

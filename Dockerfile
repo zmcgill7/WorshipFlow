@@ -26,8 +26,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY backend .
 # Copy built frontend into this leaner runtime image so we can discard the tool heavy image ussed for building
 COPY --from=build-frontend /app/frontend/dist /app/frontend/dist
-# Get static files collected
+# Get static files collected and ensure database schema is initialized
 RUN DJANGO_SECRET_KEY=dummy-secret-key python manage.py collectstatic --noinput
+RUN DJANGO_SECRET_KEY=dummy-secret-key python manage.py migrate --noinput
 
 # Requied to avoid weird Numba issues that exist in GCP runtime environments
 ENV NUMBA_CACHE_DIR=/tmp/numba_cache
