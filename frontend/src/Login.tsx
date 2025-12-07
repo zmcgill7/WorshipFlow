@@ -60,7 +60,7 @@ function Login() {
             <div className="logo-square"></div>
           </div>
           <h1>Welcome back</h1>
-          <p>Sign in to continue to your Worship Flow dashboard</p>
+          <p>Login to continue to your Worship Flow dashboard</p>
         </div>
 
         <form onSubmit={handleSubmit} className="login-form">
@@ -97,7 +97,7 @@ function Login() {
             className="btn-login"
             disabled={isLoading}
           >
-            {isLoading ? 'Signing in...' : 'Sign In'}
+            {isLoading ? 'Logging in...' : 'Login'}
           </button>
         </form>
 

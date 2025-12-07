@@ -30,8 +30,8 @@ function Welcome() {
             className="welcome-button secondary"
             onClick={() => navigate('/login')}
           >
-            I already have an account
-            <span className="welcome-sub">Sign in </span>
+            Login
+            <span className="welcome-sub">If you already have an account</span>
           </button>
         </div>
 

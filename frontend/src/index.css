@@ -420,8 +420,9 @@ button:disabled {
 
 .welcome-options {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 14px;
+  margin-top: 12px;
 }
 
 .welcome-button {
@@ -436,18 +437,25 @@ button:disabled {
 
 .welcome-button.primary {
   background: linear-gradient(180deg, #1d4ed8, #1e40af);
-  border-color: #1e3a8a;
+  border-color: #1e3a8a;  
+  font-size: 1.25rem;  
+  width: 450px;  
+  height: 150px; 
 }
 
 .welcome-button.secondary {
   background: rgba(15, 23, 42, 0.8);
   border-color: #334155;
+  font-size: 1.25rem;  
+  width: 450px;  
+  height: 150px; 
 }
 
 .welcome-button .welcome-sub {
   font-size: 0.85rem;
   color: #cbd5e1;
   opacity: 0.9;
+  text-align: left; 
 }
 
 .welcome-note {
@@ -579,6 +587,8 @@ button:disabled {
   cursor: pointer;
   transition: box-shadow 0.2s, transform 0.1s, opacity 0.2s;
   box-shadow: 0 8px 24px rgba(29, 78, 216, 0.4);
+  align-content: center;
+  justify-content: center;
 }
 
 .btn-login:hover:not(:disabled) {
