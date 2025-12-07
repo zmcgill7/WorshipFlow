@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def getInstrumentsFromFile(file):
-    predictor = apps.get_app_config('core').predictor
+    predictor = apps.get_app_config('core').get_predictor()
     # Save uploaded file temporarily
     with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tmp:
         for chunk in file.chunks():
@@ -22,7 +22,23 @@ def getInstrumentsFromFile(file):
 
     try:
         logger.info(f"Processing file: {file.name}")
-        return predictor.predict(tmp_path, top_k=3)
+        result = predictor.predict_file(tmp_path, return_probabilities=True)
+
+        # Convert new format to old format for backward compatibility
+        # Return all instruments with confidence > 50%
+        filtered_probs = [
+            (instrument, confidence)
+            for instrument, confidence in result['probabilities'].items()
+            if confidence > 0.5
+        ]
+
+        # Sort by probability (highest first)
+        sorted_probs = sorted(filtered_probs, key=lambda x: x[1], reverse=True)
+
+        return [
+            {'instrument': instrument, 'confidence': confidence}
+            for instrument, confidence in sorted_probs
+        ]
     finally:
         if os.path.exists(tmp_path):
             os.unlink(tmp_path)
