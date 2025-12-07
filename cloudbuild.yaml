@@ -18,7 +18,7 @@ steps:
     entrypoint: gcloud
     args: [
       'run', 'deploy', '$_SERVICE',
-      '--image', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:$SHORT_SHA',
+      '--image', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$SHORT_SHA',
       '--region', '$_REGION',
       '--platform', 'managed',
       '--allow-unauthenticated'
