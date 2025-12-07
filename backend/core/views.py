@@ -195,17 +195,22 @@ def get_history(request):
     if not request.user.is_authenticated:
         return JsonResponse({"error": "Authentication required"}, status=401)
 
-    # Optional filters
-    instrument_filter = request.GET.get('instrument')
-    search_query = request.GET.get('search')
-
     results = AnalysisResult.objects.filter(user=request.user).prefetch_related('predictions')
 
-    if instrument_filter:
-        results = results.filter(predictions__instrument__iexact=instrument_filter).distinct()
+    instruments_list = request.GET.get('instruments', '')
+    filter_mode = request.GET.get('filterMode', 'none')
 
-    if search_query:
-        results = results.filter(filename__icontains=search_query)
+    if instruments_list and filter_mode != 'none':
+        instruments = [inst.strip() for inst in instruments_list.split(',') if inst.strip()]
+
+        if instruments:
+            if filter_mode == 'exclude':
+                for instrument in instruments:
+                    results = results.exclude(predictions__instrument__iexact=instrument)
+            elif filter_mode == 'require':
+                for instrument in instruments:
+                    results = results.filter(predictions__instrument__iexact=instrument)
+                results = results.distinct()
 
     history_data = []
     for result in results:

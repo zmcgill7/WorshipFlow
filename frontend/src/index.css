@@ -94,7 +94,7 @@ body {
   }
 }
 
-.app { max-width: 1100px; margin: 32px auto; padding: 0 20px 64px; position: relative; z-index: 1; }
+.app { max-width: 1100px; margin: 40px auto 32px; padding: 0 20px 64px; position: relative; z-index: 1; }
 
 .layout {
   display: grid;
@@ -570,7 +570,7 @@ button:disabled { opacity: .6; cursor: not-allowed; box-shadow: none; }
 }
 
 .welcome-text {
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -611,7 +611,7 @@ button:disabled { opacity: .6; cursor: not-allowed; box-shadow: none; }
   border: none;
   padding: 0;
   color: transparent;
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -620,12 +620,12 @@ button:disabled { opacity: .6; cursor: not-allowed; box-shadow: none; }
   background-clip: text;
   cursor: pointer;
   transition: opacity 0.2s, text-shadow 0.2s;
-  text-shadow: 0 0 10px rgba(37, 99, 235, 0.7), 0 0 22px rgba(129, 140, 248, 0.8);
+  text-shadow: 0 0 6px rgba(37, 99, 235, 0.5), 0 0 12px rgba(129, 140, 248, 0.6);
 }
 
 .btn-history:hover {
   opacity: 0.8;
-  text-shadow: 0 0 14px rgba(37, 99, 235, 0.9), 0 0 28px rgba(129, 140, 248, 1);
+  text-shadow: 0 0 8px rgba(37, 99, 235, 0.7), 0 0 16px rgba(129, 140, 248, 0.8);
 }
 
 .btn-history:active {
@@ -722,7 +722,7 @@ button:disabled { opacity: .6; cursor: not-allowed; box-shadow: none; }
   background: linear-gradient(180deg, #1d4ed8, #1e40af);
   border-color: #1e3a8a;
   color: #e5e7eb;
-  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.4);
+  box-shadow: 0 2px 6px rgba(29, 78, 216, 0.25);
 }
 
 .no-instruments-available {

@@ -17,7 +17,7 @@ function History() {
   const [error, setError] = useState<string | null>(null)
   const [allInstruments, setAllInstruments] = useState<string[]>([])
   const [selectedInstruments, setSelectedInstruments] = useState<string[]>([])
-  const [filterMode, setFilterMode] = useState<'include' | 'exclude'>('include')
+  const [filterMode, setFilterMode] = useState<'require' | 'exclude'>('require')
   const [userName, setUserName] = useState<string | null>(null)
 
   useEffect(() => {
@@ -35,14 +35,22 @@ function History() {
 
   useEffect(() => {
     fetchHistory()
-  }, [])
+  }, [selectedInstruments, filterMode])
 
   async function fetchHistory() {
     setLoading(true)
     setError(null)
 
     try {
-      const response = await fetch('/api/get_history/', {
+      const params = new URLSearchParams()
+      if (selectedInstruments.length > 0) {
+        params.append('instruments', selectedInstruments.join(','))
+        params.append('filterMode', filterMode)
+      } else {
+        params.append('filterMode', 'none')
+      }
+
+      const response = await fetch(`/api/history/?${params.toString()}`, {
         method: 'GET',
         credentials: 'include',
       })
@@ -91,18 +99,6 @@ function History() {
     )
   }
 
-  const filteredHistory = history.filter((item) => {
-    if (selectedInstruments.length === 0) return true
-
-    const itemInstruments = item.predictions.map((p) => p.instrument)
-
-    if (filterMode === 'include') {
-      return selectedInstruments.every((inst) => itemInstruments.includes(inst))
-    } else {
-      return !selectedInstruments.some((inst) => itemInstruments.includes(inst))
-    }
-  })
-
   return (
     <div>
       <div className="logout-bar">
@@ -142,10 +138,10 @@ function History() {
                 <h2>Filter by Instruments</h2>
                 <div className="filter-mode-toggle">
                   <button
-                    className={`filter-mode-btn ${filterMode === 'include' ? 'active' : ''}`}
-                    onClick={() => setFilterMode('include')}
+                    className={`filter-mode-btn ${filterMode === 'require' ? 'active' : ''}`}
+                    onClick={() => setFilterMode('require')}
                   >
-                    Include
+                    Require
                   </button>
                   <button
                     className={`filter-mode-btn ${filterMode === 'exclude' ? 'active' : ''}`}
@@ -177,22 +173,22 @@ function History() {
 
             <div className="history-results">
               <h2>
-                {filteredHistory.length} Song{filteredHistory.length !== 1 ? 's' : ''}
+                {history.length} Song{history.length !== 1 ? 's' : ''}
                 {selectedInstruments.length > 0 && (
                   <span className="filter-indicator">
-                    ({filterMode === 'include' ? 'with' : 'without'}{' '}
+                    ({filterMode === 'require' ? 'with' : 'without'}{' '}
                     {selectedInstruments.join(', ')})
                   </span>
                 )}
               </h2>
 
-              {filteredHistory.length === 0 ? (
+              {history.length === 0 ? (
                 <div className="no-history">
                   <p>No songs match your filters</p>
                 </div>
               ) : (
                 <div className="history-grid">
-                  {filteredHistory.map((item) => (
+                  {history.map((item) => (
                     <div key={item.id} className="history-item">
                       <div className="history-item-header">
                         <h3>{item.filename}</h3>
