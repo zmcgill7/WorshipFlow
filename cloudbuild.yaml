@@ -5,19 +5,15 @@ substitutions:
 
 steps:
   - name: gcr.io/cloud-builders/docker
-    env: ['DOCKER_BUILDKIT=1']
     args: [
       'build',
-      '--cache-from=$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:cache',
+      '--cache-from', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$SHORT_SHA',
       '--build-arg', 'BUILDKIT_INLINE_CACHE=1',
-      '-t', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:$SHORT_SHA',
-      '-t', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:cache',
+      '-t', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$SHORT_SHA',
       '.'
     ]
   - name: gcr.io/cloud-builders/docker
-    args: ['push', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:$SHORT_SHA']
-  - name: gcr.io/cloud-builders/docker
-    args: ['push', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:cache']
+    args: ['push', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$SHORT_SHA']
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk
     entrypoint: gcloud
     args: [
@@ -32,16 +28,11 @@ steps:
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk
     entrypoint: gcloud
     args: [
-      'run', 'jobs', 'create', 'worship-flow-migrate',
-      '--image', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:$SHORT_SHA',
-      '--region', '$_REGION',
-      '--set-env-vars', 'DJANGO_DEBUG=False,DB_NAME=worshipflow,DB_USER=worshipflow_user,CLOUD_SQL_CONNECTION=$$PROJECT_ID:$_REGION:worshipflow-db',
-      '--set-secrets', 'DJANGO_SECRET_KEY=DJANGO_SECRET_KEY:latest,DB_PASSWORD=DB_PASSWORD:latest',
-      '--set-cloudsql-instances', '$$PROJECT_ID:$_REGION:worshipflow-db',
-      '--command', 'python',
-      '--args', 'manage.py,migrate,--noinput'
+      'run', 'jobs', 'update', 'worship-flow-migrate',
+      '--image', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$SHORT_SHA',
+      '--region', '$_REGION'
     ]
-    # Ignore errors if job already exists
+    # Ignore errors if job doesn't exist yet
     allowFailure: true
 
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk
@@ -55,4 +46,4 @@ steps:
 options:
   logging: CLOUD_LOGGING_ONLY
 images:
-  - $_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:$SHORT_SHA
+  - $_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$SHORT_SHA
