@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 
 type FileWithPreview = {
   file: File
@@ -12,53 +12,11 @@ type FileAnalysisResult = {
   error?: string
 }
 
-type SavedSession = {
-  id: string
-  createdAt: string
-  results: FileAnalysisResult[]
-}
-
-function getSessionsStorageKey() {
-  try {
-    const rawUser = localStorage.getItem('worshipUser')
-    if (!rawUser) return 'savedSessions:guest'
-    const parsed = JSON.parse(rawUser)
-    const idPart = parsed.email || parsed.id || 'guest'
-    return `savedSessions:${idPart}`
-  } catch {
-    return 'savedSessions:guest'
-  }
-}
-
-function formatSessionDate(iso: string) {
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return ''
-  return d.toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
 function App() {
   const [files, setFiles] = useState<FileWithPreview[]>([])
   const [analyzing, setAnalyzing] = useState(false)
   const [results, setResults] = useState<FileAnalysisResult[]>([])
   const [error, setError] = useState<string | null>(null)
-  const [savedSessions, setSavedSessions] = useState<SavedSession[]>([])
-
-  useEffect(() => {
-    const key = getSessionsStorageKey()
-    const raw = localStorage.getItem(key)
-    if (!raw) return
-    try {
-      const parsed = JSON.parse(raw) as SavedSession[]
-      setSavedSessions(parsed)
-    } catch {
-      // ignore malformed data
-    }
-  }, [])
 
   function addFiles(newFiles: FileList | File[]) {
     setError(null)
@@ -111,36 +69,6 @@ function App() {
       newFiles.splice(index, 1)
       return newFiles
     })
-  }
-
-  function saveSession(analysisResults: FileAnalysisResult[]) {
-    if (analysisResults.length === 0) return
-    const key = getSessionsStorageKey()
-    const newSession: SavedSession = {
-      id: `${Date.now()}`,
-      createdAt: new Date().toISOString(),
-      results: analysisResults,
-    }
-
-    setSavedSessions((prev) => {
-      const updated = [newSession, ...prev].slice(0, 20)
-      try {
-        localStorage.setItem(key, JSON.stringify(updated))
-      } catch {
-        // ignore quota / storage errors
-      }
-      return updated
-    })
-  }
-
-  function clearSessions() {
-    const key = getSessionsStorageKey()
-    setSavedSessions([])
-    try {
-      localStorage.removeItem(key)
-    } catch {
-      // ignore
-    }
   }
 
   async function analyzeFiles() {
@@ -208,7 +136,6 @@ function App() {
       }
 
       setResults(analysisResults)
-      saveSession(analysisResults)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to analyze files.')
     } finally {
@@ -320,56 +247,6 @@ function App() {
             </div>
           )}
         </div>
-
-        <aside className="sessions-column">
-          <div className="sessions-card">
-            <div className="sessions-header">
-              <div>
-                <div className="sessions-title">Saved Sessions</div>
-                <p className="sessions-subtitle">Revisit your past instrument analyses anytime.</p>
-              </div>
-              {savedSessions.length > 0 && (
-                <button type="button" className="sessions-clear" onClick={clearSessions}>
-                  Clear
-                </button>
-              )}
-            </div>
-
-            {savedSessions.length === 0 ? (
-              <p className="sessions-empty">No saved sessions yet. Run an analysis to start building history.</p>
-            ) : (
-              <div className="sessions-list">
-                {savedSessions.map((session) => {
-                  const instruments = Array.from(
-                    new Set(
-                      session.results.flatMap((r) => (r.error ? [] : r.instruments || [])),
-                    ),
-                  ).slice(0, 6)
-
-                  const successfulCount = session.results.filter((r) => !r.error).length
-
-                  return (
-                    <button type="button" key={session.id} className="session-item">
-                      <div className="session-meta">
-                        <span className="session-time">{formatSessionDate(session.createdAt)}</span>
-                        <span className="session-count">{successfulCount} file(s)</span>
-                      </div>
-                      {instruments.length > 0 && (
-                        <div className="session-tags">
-                          {instruments.map((inst) => (
-                            <span key={inst} className="tag tag-small">
-                              {inst}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-        </aside>
       </section>
     </div>
   )

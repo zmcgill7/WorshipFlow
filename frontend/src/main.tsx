@@ -5,6 +5,7 @@ import Welcome from './Welcome'
 import Login from './Login'
 import Signup from './Signup'
 import Dashboard from './Dashboard'
+import History from './History'
 import ProtectedRoute from './ProtectedRoute'
 import BackgroundVisual from './BackgroundVisual'
 import './index.css'
@@ -22,6 +23,14 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/history"
+          element={
+            <ProtectedRoute>
+              <History />
             </ProtectedRoute>
           }
         />

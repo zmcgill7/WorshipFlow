@@ -37,10 +37,15 @@ function Dashboard() {
   return (
     <div>
       <div className="logout-bar">
-        {userName && <span className="welcome-text">Welcome {userName}</span>}
-        <button onClick={handleLogout} className="btn-logout">
-          Sign Out
+        <button onClick={() => navigate('/history')} className="btn-history">
+          History
         </button>
+        <div className="logout-bar-right">
+          {userName && <span className="welcome-text">Welcome {userName}</span>}
+          <button onClick={handleLogout} className="btn-logout">
+            Sign Out
+          </button>
+        </div>
       </div>
       <App />
     </div>
