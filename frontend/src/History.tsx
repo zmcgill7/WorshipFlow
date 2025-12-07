@@ -1,6 +1,37 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+// --- NEW ICON IMPORTS ---
+import { FaGuitar, FaDrum, FaMicrophone, FaKeyboard } from 'react-icons/fa';
+import { GiViolin, GiTrumpet, GiGuitarBassHead } from 'react-icons/gi'; 
 
+
+// --- NEW ICON MAPPING ---
+// A dictionary to map instrument strings to their icon components
+const instrumentIconMap: { [key: string]: React.ElementType } = {
+  'guitar': FaGuitar,
+  'bass': GiGuitarBassHead,
+  'keyboard': FaKeyboard,
+  'drums': FaDrum,
+  'strings': GiViolin,
+  'brass': GiTrumpet,
+  'vocals': FaMicrophone,
+};
+
+// --- NEW HELPER COMPONENT ---
+// Component to render the correct icon based on the instrument name
+const InstrumentIcon = ({ name }: { name: string }) => {
+  const IconComponent = instrumentIconMap[name.toLowerCase()];
+  
+  if (!IconComponent) {
+    return null; // Return nothing if the instrument name isn't mapped
+  }
+
+  // Render the component with desired size and spacing
+  return <IconComponent size={16} style={{ marginRight: '5px' }} />;
+};
+
+
+// --- EXISTING TYPES ---
 type HistoryItem = {
   id: number
   filename: string
@@ -9,6 +40,7 @@ type HistoryItem = {
     confidence: number
   }>
 }
+// -----------------------
 
 function History() {
   const navigate = useNavigate()
@@ -162,6 +194,8 @@ function History() {
                       }`}
                       onClick={() => toggleInstrument(instrument)}
                     >
+                      {/* Using the icon component in the filter button for visual consistency */}
+                      <InstrumentIcon name={instrument} />
                       {instrument}
                     </button>
                   ))}
@@ -195,9 +229,21 @@ function History() {
                       </div>
                       <div className="tags">
                         {item.predictions.map((pred, i) => (
-                          <span key={i} className="tag">
+                          <span 
+                            key={i} 
+                            className="tag"
+                            // ADDED STYLING to align the icon and text
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              fontSize: '14px' // Slightly smaller size for history view
+                            }}
+                          >
+                            {/* --- DYNAMIC ICON INTEGRATION --- */}
+                            <InstrumentIcon name={pred.instrument} />
                             {pred.instrument}
                             <span className="tag-confidence">
+                              {/* Confidence percentage is calculated and rounded here */}
                               {Math.round(pred.confidence * 100)}%
                             </span>
                           </span>
