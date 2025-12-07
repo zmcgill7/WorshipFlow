@@ -5,16 +5,19 @@ substitutions:
 
 steps:
   - name: gcr.io/cloud-builders/docker
+    env: ['DOCKER_BUILDKIT=1', 'BUILDKIT_INLINE_CACHE=1']
     args: [
       'build',
+      '--cache-from=$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO:cache',
+      '--cache-to=type=registry,ref=$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO:cache,mode=max',
       '-t', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$SHORT_SHA',
+      '-t', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO:cache',
       '.'
     ]
   - name: gcr.io/cloud-builders/docker
-    args: [
-      'push',
-      '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$SHORT_SHA'
-    ]
+    args: ['push', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$SHORT_SHA']
+  - name: gcr.io/cloud-builders/docker
+    args: ['push', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO:cache']
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk
     entrypoint: gcloud
     args: [

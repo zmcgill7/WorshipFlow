@@ -78,7 +78,7 @@ def extract_yamnet_embedding(audio: np.ndarray, yamnet_model) -> np.ndarray:
 class InstrumentClassifier:
     """Multi-label instrument classifier for inference"""
 
-    def __init__(self, model_path: str, results_path: str, threshold: float = 0.5):
+    def __init__(self, model_path: str, results_path: str, threshold: float = 0.5, yamnet_path: str | None = None):
         """
         Initialize classifier
 
@@ -120,7 +120,8 @@ class InstrumentClassifier:
 
         # Load YAMNet
         print("\nLoading YAMNet for feature extraction...")
-        self.yamnet_model = hub.load('https://tfhub.dev/google/yamnet/1')
+        self.yamnet_path = yamnet_path or 'https://tfhub.dev/google/yamnet/1'
+        self.yamnet_model = hub.load(self.yamnet_path)
         print("✓ YAMNet loaded")
 
         print("\nClassifier ready!\n")

@@ -22,6 +22,7 @@ class CoreConfig(AppConfig):
             cls.predictor = InstrumentClassifier(
                 model_path=str(model_dir / 'best_model.keras'),
                 results_path=str(model_dir / 'training_results.json'),
+                yamnet_path=str(model_dir / 'yamnet'),
             )
             logger.info("WorshipFlow model loaded successfully.")
         except Exception:

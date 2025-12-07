@@ -19,13 +19,15 @@ FROM python:3.11-slim AS runtime
 
 WORKDIR /app/backend
 
-RUN apt-get update && apt-get install -y --no-install-recommends libsndfile1 ffmpeg && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates && rm -rf /var/lib/apt/lists/*
 
 # Copy only the backend requirements.txt before running pip install
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 # Now we copy the rest of the backend source code and even if this code is different pip install won't run again
 COPY backend .
+# Pre-bundle YAMNet so runtime doesn't download from tfhub
+RUN mkdir -p core/model_utils/yamnet && curl -L "https://tfhub.dev/google/yamnet/1?tf-hub-format=compressed" -o /tmp/yamnet.tar.gz && tar -xzf /tmp/yamnet.tar.gz -C core/model_utils/yamnet && rm /tmp/yamnet.tar.gz
 # Copy built frontend into this leaner runtime image so we can discard the tool heavy image ussed for building
 COPY --from=build-frontend /app/frontend/dist /app/frontend/dist
 # Get static files collected and ensure database schema is initialized
