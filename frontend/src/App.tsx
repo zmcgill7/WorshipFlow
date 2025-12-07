@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 type FileWithPreview = {
   file: File
@@ -12,11 +12,53 @@ type FileAnalysisResult = {
   error?: string
 }
 
+type SavedSession = {
+  id: string
+  createdAt: string
+  results: FileAnalysisResult[]
+}
+
+function getSessionsStorageKey() {
+  try {
+    const rawUser = localStorage.getItem('worshipUser')
+    if (!rawUser) return 'savedSessions:guest'
+    const parsed = JSON.parse(rawUser)
+    const idPart = parsed.email || parsed.id || 'guest'
+    return `savedSessions:${idPart}`
+  } catch {
+    return 'savedSessions:guest'
+  }
+}
+
+function formatSessionDate(iso: string) {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 function App() {
   const [files, setFiles] = useState<FileWithPreview[]>([])
   const [analyzing, setAnalyzing] = useState(false)
   const [results, setResults] = useState<FileAnalysisResult[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [savedSessions, setSavedSessions] = useState<SavedSession[]>([])
+
+  useEffect(() => {
+    const key = getSessionsStorageKey()
+    const raw = localStorage.getItem(key)
+    if (!raw) return
+    try {
+      const parsed = JSON.parse(raw) as SavedSession[]
+      setSavedSessions(parsed)
+    } catch {
+      // ignore malformed data
+    }
+  }, [])
 
   function addFiles(newFiles: FileList | File[]) {
     setError(null)
@@ -69,6 +111,36 @@ function App() {
       newFiles.splice(index, 1)
       return newFiles
     })
+  }
+
+  function saveSession(analysisResults: FileAnalysisResult[]) {
+    if (analysisResults.length === 0) return
+    const key = getSessionsStorageKey()
+    const newSession: SavedSession = {
+      id: `${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      results: analysisResults,
+    }
+
+    setSavedSessions((prev) => {
+      const updated = [newSession, ...prev].slice(0, 20)
+      try {
+        localStorage.setItem(key, JSON.stringify(updated))
+      } catch {
+        // ignore quota / storage errors
+      }
+      return updated
+    })
+  }
+
+  function clearSessions() {
+    const key = getSessionsStorageKey()
+    setSavedSessions([])
+    try {
+      localStorage.removeItem(key)
+    } catch {
+      // ignore
+    }
   }
 
   async function analyzeFiles() {
@@ -136,6 +208,7 @@ function App() {
       }
 
       setResults(analysisResults)
+      saveSession(analysisResults)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to analyze files.')
     } finally {
@@ -150,101 +223,153 @@ function App() {
         <p>Upload multiple .mp3, .mp4, or .wav files to analyze instruments simultaneously.</p>
       </header>
 
-      <section>
-        <div
-          className="dropzone"
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={handleDrop}
-          aria-label="Drop .mp3, .mp4, or .wav files here"
-        >
-          <p>Drag & drop multiple .mp3, .mp4, or .wav files here, or select files</p>
-          <input
-            type="file"
-            accept=".mp3,.mp4,.wav,audio/mpeg,video/mp4,audio/wav,audio/x-wav,audio/wave"
-            onChange={handleInputChange}
-            multiple
-          />
-        </div>
+      <section className="layout">
+        <div className="analysis-column">
+          <div
+            className="dropzone"
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={handleDrop}
+            aria-label="Drop .mp3, .mp4, or .wav files here"
+          >
+            <p>Drag & drop multiple .mp3, .mp4, or .wav files here, or select files</p>
+            <input
+              type="file"
+              accept=".mp3,.mp4,.wav,audio/mpeg,video/mp4,audio/wav,audio/x-wav,audio/wave"
+              onChange={handleInputChange}
+              multiple
+            />
+          </div>
 
-        {files.length > 0 && (
-          <div className="file-list">
-            <h3>Selected Files ({files.length})</h3>
-            <div className="files-grid">
-              {files.map((fileWithPreview, index) => (
-                <div key={index} className="file-item">
-                  <div className="file-header">
-                    <span className="file-name">{fileWithPreview.file.name}</span>
-                    <button
-                      className="btn-remove"
-                      onClick={() => removeFile(index)}
-                      aria-label="Remove file"
-                    >
-                      ✕
-                    </button>
+          {files.length > 0 && (
+            <div className="file-list">
+              <h3>Selected Files ({files.length})</h3>
+              <div className="files-grid">
+                {files.map((fileWithPreview, index) => (
+                  <div key={index} className="file-item">
+                    <div className="file-header">
+                      <span className="file-name">{fileWithPreview.file.name}</span>
+                      <button
+                        className="btn-remove"
+                        onClick={() => removeFile(index)}
+                        aria-label="Remove file"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    {fileWithPreview.isVideo ? (
+                      <video
+                        src={fileWithPreview.previewUrl}
+                        controls
+                        className="file-preview"
+                      />
+                    ) : (
+                      <audio
+                        src={fileWithPreview.previewUrl}
+                        controls
+                        className="file-preview"
+                      />
+                    )}
                   </div>
-                  {fileWithPreview.isVideo ? (
-                    <video
-                      src={fileWithPreview.previewUrl}
-                      controls
-                      className="file-preview"
-                    />
-                  ) : (
-                    <audio
-                      src={fileWithPreview.previewUrl}
-                      controls
-                      className="file-preview"
-                    />
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="actions">
+            <button
+              className="btn-reactive"
+              onMouseMove={(e) => {
+                const r = (e.currentTarget as HTMLButtonElement).getBoundingClientRect()
+                const x = e.clientX - r.left
+                const y = e.clientY - r.top
+                e.currentTarget.style.setProperty('--mx', `${x}px`)
+                e.currentTarget.style.setProperty('--my', `${y}px`)
+              }}
+              onClick={analyzeFiles}
+              disabled={files.length === 0 || analyzing}
+            >
+              {analyzing ? `Analyzing ${files.length} file(s)…` : `Analyze ${files.length} file(s)`}
+            </button>
+          </div>
+
+          {error && <p className="error">{error}</p>}
+
+          {results.length > 0 && (
+            <div className="results-container">
+              <h2>Analysis Results</h2>
+              {results.map((result, index) => (
+                <div key={index} className="results">
+                  <div className="result-header">
+                    <h3>{result.fileName}</h3>
+                    {result.error && <span className="result-error">❌ {result.error}</span>}
+                  </div>
+                  {!result.error && result.instruments.length > 0 && (
+                    <div className="tags">
+                      {result.instruments.map((inst, i) => (
+                        <span key={i} className="tag">
+                          {inst}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {!result.error && result.instruments.length === 0 && (
+                    <p className="no-instruments">No instruments detected</p>
                   )}
                 </div>
               ))}
             </div>
-          </div>
-        )}
-
-        <div className="actions">
-          <button
-            className="btn-reactive"
-            onMouseMove={(e) => {
-              const r = (e.currentTarget as HTMLButtonElement).getBoundingClientRect()
-              const x = e.clientX - r.left
-              const y = e.clientY - r.top
-              e.currentTarget.style.setProperty('--mx', `${x}px`)
-              e.currentTarget.style.setProperty('--my', `${y}px`)
-            }}
-            onClick={analyzeFiles}
-            disabled={files.length === 0 || analyzing}
-          >
-            {analyzing ? `Analyzing ${files.length} file(s)…` : `Analyze ${files.length} file(s)`}
-          </button>
+          )}
         </div>
 
-        {error && <p className="error">{error}</p>}
-
-        {results.length > 0 && (
-          <div className="results-container">
-            <h2>Analysis Results</h2>
-            {results.map((result, index) => (
-              <div key={index} className="results">
-                <div className="result-header">
-                  <h3>{result.fileName}</h3>
-                  {result.error && <span className="result-error">❌ {result.error}</span>}
-                </div>
-                {!result.error && result.instruments.length > 0 && (
-                  <div className="tags">
-                    {result.instruments.map((inst, i) => (
-                      <span key={i} className="tag">
-                        {inst}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                {!result.error && result.instruments.length === 0 && (
-                  <p className="no-instruments">No instruments detected</p>
-                )}
+        <aside className="sessions-column">
+          <div className="sessions-card">
+            <div className="sessions-header">
+              <div>
+                <div className="sessions-title">Saved Sessions</div>
+                <p className="sessions-subtitle">Revisit your past instrument analyses anytime.</p>
               </div>
-            ))}
+              {savedSessions.length > 0 && (
+                <button type="button" className="sessions-clear" onClick={clearSessions}>
+                  Clear
+                </button>
+              )}
+            </div>
+
+            {savedSessions.length === 0 ? (
+              <p className="sessions-empty">No saved sessions yet. Run an analysis to start building history.</p>
+            ) : (
+              <div className="sessions-list">
+                {savedSessions.map((session) => {
+                  const instruments = Array.from(
+                    new Set(
+                      session.results.flatMap((r) => (r.error ? [] : r.instruments || [])),
+                    ),
+                  ).slice(0, 6)
+
+                  const successfulCount = session.results.filter((r) => !r.error).length
+
+                  return (
+                    <button type="button" key={session.id} className="session-item">
+                      <div className="session-meta">
+                        <span className="session-time">{formatSessionDate(session.createdAt)}</span>
+                        <span className="session-count">{successfulCount} file(s)</span>
+                      </div>
+                      {instruments.length > 0 && (
+                        <div className="session-tags">
+                          {instruments.map((inst) => (
+                            <span key={inst} className="tag tag-small">
+                              {inst}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
-        )}
+        </aside>
       </section>
     </div>
   )
