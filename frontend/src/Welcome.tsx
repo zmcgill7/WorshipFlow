@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
-import logo from "./assets/favicon.png";
+
+const logo = '/assets/favicon.png';
 
 function Welcome() {
   const navigate = useNavigate()
@@ -8,12 +9,12 @@ function Welcome() {
     <div className="welcome-container">
       <div className="welcome-card">
         <div className="welcome-header">
-          <div className="logo-wrapper">             
+          <div className="logo-wrapper">
             <img src={logo} alt="Logo" width={115} height={115} />
             <div className="logo-square"></div>
           </div>
           <h1>Welcome to Worship Flow</h1>
-          <p>Plan, organize, and flow through your worship sets with ease.</p>          
+          <p>Plan, organize, and flow through your worship sets with ease.</p>
         </div>
 
         <div className="welcome-options">

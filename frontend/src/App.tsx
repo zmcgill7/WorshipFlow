@@ -4,6 +4,9 @@ import React, { useState } from 'react'
 import { FaGuitar, FaDrum, FaMicrophone, FaKeyboard } from 'react-icons/fa';
 import { GiViolin, GiTrumpet, GiGuitarBassHead } from 'react-icons/gi';
 
+// Logo from backend static files (served by Django/whitenoise)
+const logo = '/assets/favicon.png';
+
 
 // --- NEW ICON MAPPING ---
 // A dictionary to map instrument strings to their icon components

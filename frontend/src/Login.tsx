@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import logo from "./assets/favicon.png";
+
+const logo = '/assets/favicon.png';
 
 const STORAGE_KEY = 'worshipUser'
 
@@ -55,7 +56,7 @@ function Login() {
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
-         <div className="logo-wrapper">             
+          <div className="logo-wrapper">
             <img src={logo} alt="Logo" width={115} height={115} />
             <div className="logo-square"></div>
           </div>
