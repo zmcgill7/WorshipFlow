@@ -5,11 +5,11 @@ substitutions:
 
 steps:
   - name: gcr.io/cloud-builders/docker
-    env: ['DOCKER_BUILDKIT=1', 'BUILDKIT_INLINE_CACHE=1']
+    env: ['DOCKER_BUILDKIT=1']
     args: [
       'build',
       '--cache-from=$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO:cache',
-      '--cache-to=type=registry,ref=$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO:cache,mode=max',
+      '--build-arg', 'BUILDKIT_INLINE_CACHE=1',
       '-t', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$SHORT_SHA',
       '-t', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO:cache',
       '.'
