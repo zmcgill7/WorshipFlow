@@ -55,63 +55,46 @@ def getInstrumentsFromFile(file):
 @csrf_exempt
 @require_http_methods(["POST"])
 def analyzeFiles(httpRequest):
-    try:
-        uploadedFiles = httpRequest.FILES.getlist("file")
-        if not uploadedFiles:
-            return JsonResponse({"error": "No files uploaded"}, status=400)
+    uploadedFiles = httpRequest.FILES.getlist("file")
+    if not uploadedFiles:
+        return JsonResponse({"error": "No files uploaded"}, status=400)
 
-        if len(uploadedFiles) > 10:
-            return JsonResponse(
-                {"error": "Too many files. Maximum 10 files allowed."},
-                status=400
-            )
+    if len(uploadedFiles) > 10:
+        return JsonResponse(
+            {"error": "Too many files. Maximum 10 files allowed."},
+            status=400
+        )
 
-        instrumentLists = []
-        for uploadedFile in uploadedFiles:
-            try:
-                instrumentList = getInstrumentsFromFile(uploadedFile)
+    instrumentLists = []
+    for uploadedFile in uploadedFiles:
+        try:
+            instrumentList = getInstrumentsFromFile(uploadedFile)
 
-                if httpRequest.user.is_authenticated:
-                    # Persist history for logged-in users
-                    analysis_result = AnalysisResult.objects.create(
-                        user=httpRequest.user,
-                        filename=uploadedFile.name
+            if httpRequest.user.is_authenticated:
+                # Persist history for logged-in users
+                analysis_result = AnalysisResult.objects.create(
+                    user=httpRequest.user,
+                    filename=uploadedFile.name
+                )
+
+                for pred in instrumentList:
+                    InstrumentPrediction.objects.create(
+                        analysis_result=analysis_result,
+                        instrument=pred['instrument'],
+                        confidence=pred['confidence']
                     )
 
-                    for pred in instrumentList:
-                        InstrumentPrediction.objects.create(
-                            analysis_result=analysis_result,
-                            instrument=pred['instrument'],
-                            confidence=pred['confidence']
-                        )
+            instrumentLists.append({
+                "filename": uploadedFile.name,
+                "predictions": instrumentList
+            })
+        except ValueError as ve:
+            instrumentLists.append({
+                "filename": uploadedFile.name,
+                "error": str(ve)
+            })
 
-                instrumentLists.append({
-                    "filename": uploadedFile.name,
-                    "predictions": instrumentList
-                })
-            except ValueError as ve:
-                logger.warning(
-                    f"Validation error for {uploadedFile.name}: {ve}")
-                instrumentLists.append({
-                    "filename": uploadedFile.name,
-                    "error": str(ve)
-                })
-            except Exception as e:
-                logger.error(
-                    f"Error processing {uploadedFile.name}: {e}", exc_info=True)
-                instrumentLists.append({
-                    "filename": uploadedFile.name,
-                    "error": "Failed to process file"
-                })
-
-        return JsonResponse({"results": instrumentLists}, status=200)
-
-    except Exception as e:
-        logger.error(f"Unexpected error in analyzeFiles: {e}", exc_info=True)
-        return JsonResponse(
-            {"error": "Internal server error"},
-            status=500
-        )
+    return JsonResponse({"results": instrumentLists}, status=200)
 
 
 @csrf_exempt
