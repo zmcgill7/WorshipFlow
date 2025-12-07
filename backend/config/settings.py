@@ -114,6 +114,7 @@ if os.environ.get('CLOUD_SQL_CONNECTION'):
             'USER': os.environ.get('DB_USER', 'worshipflow_user'),
             'PASSWORD': os.environ.get('DB_PASSWORD'),
             'HOST': f"/cloudsql/{os.environ.get('CLOUD_SQL_CONNECTION')}",
+            'CONN_MAX_AGE': 600,  # Keep connections alive for 10 minutes
         }
     }
 else:
@@ -122,6 +123,7 @@ else:
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',
+            'CONN_MAX_AGE': 600,  # Keep connections alive for 10 minutes
         }
     }
 

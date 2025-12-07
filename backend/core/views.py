@@ -90,6 +90,10 @@ def analyzeFiles(httpRequest):
     # Save to database after all predictions complete
     if httpRequest.user.is_authenticated:
         for filename, predictions in db_saves:
+            # Skip if this filename already exists for this user
+            if AnalysisResult.objects.filter(user=httpRequest.user, filename=filename).exists():
+                continue
+
             analysis_result = AnalysisResult.objects.create(
                 user=httpRequest.user,
                 filename=filename
