@@ -12,13 +12,16 @@ tensorflow-hub
 keras
 
 # Audio Processing
-librosa
-soundfile
-audioread
+librosa==0.10.1
+soundfile==0.12.1
+audioread==3.0.1
 
 # Scientific Computing (compatible versions)
+numpy==1.26.4
 scipy
 scikit-learn
+numba==0.59.1
+llvmlite==0.42.0
 
 # Data Processing
 pandas
