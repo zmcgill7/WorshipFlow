@@ -8,21 +8,21 @@ steps:
     env: ['DOCKER_BUILDKIT=1']
     args: [
       'build',
-      '--cache-from=$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO:cache',
+      '--cache-from=$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:cache',
       '--build-arg', 'BUILDKIT_INLINE_CACHE=1',
-      '-t', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$SHORT_SHA',
-      '-t', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO:cache',
+      '-t', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:$SHORT_SHA',
+      '-t', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:cache',
       '.'
     ]
   - name: gcr.io/cloud-builders/docker
-    args: ['push', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$SHORT_SHA']
+    args: ['push', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:$SHORT_SHA']
   - name: gcr.io/cloud-builders/docker
-    args: ['push', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO:cache']
+    args: ['push', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:cache']
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk
     entrypoint: gcloud
     args: [
       'run', 'deploy', '$_SERVICE',
-      '--image', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$SHORT_SHA',
+      '--image', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:$SHORT_SHA',
       '--region', '$_REGION',
       '--platform', 'managed',
       '--allow-unauthenticated'
@@ -33,7 +33,7 @@ steps:
     entrypoint: gcloud
     args: [
       'run', 'jobs', 'create', 'worship-flow-migrate',
-      '--image', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$SHORT_SHA',
+      '--image', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:$SHORT_SHA',
       '--region', '$_REGION',
       '--set-env-vars', 'DJANGO_DEBUG=False,DB_NAME=worshipflow,DB_USER=worshipflow_user,CLOUD_SQL_CONNECTION=$$PROJECT_ID:$_REGION:worshipflow-db',
       '--set-secrets', 'DJANGO_SECRET_KEY=DJANGO_SECRET_KEY:latest,DB_PASSWORD=DB_PASSWORD:latest',
@@ -55,4 +55,4 @@ steps:
 options:
   logging: CLOUD_LOGGING_ONLY
 images:
-  - $_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$SHORT_SHA
+  - $_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:$SHORT_SHA
