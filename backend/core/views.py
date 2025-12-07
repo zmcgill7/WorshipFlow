@@ -15,6 +15,12 @@ logger = logging.getLogger(__name__)
 
 def getInstrumentsFromFile(file):
     predictor = apps.get_app_config('core').get_predictor()
+
+    # Check if predictor loaded successfully
+    if predictor is None:
+        logger.error("Predictor not available - model failed to load")
+        raise ValueError("Model not available. Please contact support.")
+
     # Save uploaded file temporarily
     with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tmp:
         for chunk in file.chunks():
