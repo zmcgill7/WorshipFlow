@@ -1,6 +1,5 @@
 import { useNavigate } from 'react-router-dom'
 import logo from "./assets/favicon.png";
-import { FaGuitar } from 'react-icons/fa';
 
 function Welcome() {
   const navigate = useNavigate()
