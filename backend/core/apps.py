@@ -8,6 +8,19 @@ class CoreConfig(AppConfig):
     name = 'core'
     predictor = None  # Singleton instance
 
+    def ready(self):
+        """Called when Django starts - warm up database connection and model"""
+        from django.db import connection
+        try:
+            # Force database connection at startup to avoid first-request timeout
+            connection.ensure_connection()
+        except Exception:
+            pass  # Connection will be retried on first request
+
+        # Start loading model in background thread
+        import threading
+        threading.Thread(target=self.get_predictor, daemon=True).start()
+
     @classmethod
     def get_predictor(cls):
         """Load model lazily on first use."""
@@ -22,6 +35,7 @@ class CoreConfig(AppConfig):
             cls.predictor = InstrumentClassifier(
                 model_path=str(model_dir / 'best_model.keras'),
                 results_path=str(model_dir / 'training_results.json'),
+                yamnet_path=str(model_dir / 'yamnet'),
             )
             logger.info("WorshipFlow model loaded successfully.")
         except Exception:

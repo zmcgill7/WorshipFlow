@@ -19,11 +19,15 @@ FROM python:3.11-slim AS runtime
 
 WORKDIR /app/backend
 
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates libpq-dev build-essential && rm -rf /var/lib/apt/lists/*
+
 # Copy only the backend requirements.txt before running pip install
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 # Now we copy the rest of the backend source code and even if this code is different pip install won't run again
 COPY backend .
+# Pre-bundle YAMNet so runtime doesn't download from tfhub
+RUN mkdir -p core/model_utils/yamnet && curl -L "https://tfhub.dev/google/yamnet/1?tf-hub-format=compressed" -o /tmp/yamnet.tar.gz && tar -xzf /tmp/yamnet.tar.gz -C core/model_utils/yamnet && rm /tmp/yamnet.tar.gz
 # Copy built frontend into this leaner runtime image so we can discard the tool heavy image ussed for building
 COPY --from=build-frontend /app/frontend/dist /app/frontend/dist
 # Get static files collected and ensure database schema is initialized
@@ -32,11 +36,11 @@ RUN DJANGO_SECRET_KEY=dummy-secret-key python manage.py collectstatic --noinput
 # Only uncomment if testing locally using sqlite otherwise it is handled in GCP using Cloud SQL migrations
 # RUN DJANGO_SECRET_KEY=dummy-secret-key python manage.py migrate --noinput
 
+# Pre-compile TensorFlow and librosa to speed up cold starts
+RUN python -c "import tensorflow; import librosa"
+
 # Requied to avoid weird Numba issues that exist in GCP runtime environments
 ENV NUMBA_CACHE_DIR=/tmp/numba_cache
-ENV OMP_NUM_THREADS=1
-ENV OPENBLAS_NUM_THREADS=1
-ENV MKL_NUM_THREADS=1
 
 # Cloud Run entrypoint
-CMD ["python", "-m", "gunicorn", "--bind", "0.0.0.0:8080", "--workers", "1", "config.wsgi:application"]
+CMD ["python", "-m", "gunicorn", "--bind", "0.0.0.0:8080", "--workers", "1", "--timeout", "120", "config.wsgi:application"]

@@ -15,7 +15,11 @@ logger = logging.getLogger(__name__)
 
 def getInstrumentsFromFile(file):
     predictor = apps.get_app_config('core').get_predictor()
-    # Save uploaded file temporarily
+
+    if predictor is None:
+        logger.error("Predictor not available - model failed to load")
+        raise ValueError("Model not available. Please contact support.")
+
     with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tmp:
         for chunk in file.chunks():
             tmp.write(chunk)
@@ -23,17 +27,20 @@ def getInstrumentsFromFile(file):
 
     try:
         logger.info(f"Processing file: {file.name}")
-        result = predictor.predict_file(tmp_path, return_probabilities=True)
+        try:
+            result = predictor.predict_file(tmp_path, return_probabilities=True)
+        except BaseException as e:  # catch SystemExit and other non-Exception failures
+            logger.error(f"Predictor failed for {file.name}: {e}", exc_info=True)
+            raise ValueError("Audio processing failed. Please try another file.")
 
-        # Convert new format to old format for backward compatibility
-        # Return all instruments with confidence > 50%
+        # Keep instruments above 50% confidence
         filtered_probs = [
             (instrument, confidence)
             for instrument, confidence in result['probabilities'].items()
             if confidence > 0.5
         ]
 
-        # Sort by probability (highest first)
+        # Highest confidence first
         sorted_probs = sorted(filtered_probs, key=lambda x: x[1], reverse=True)
 
         return [
@@ -48,72 +55,66 @@ def getInstrumentsFromFile(file):
 @csrf_exempt
 @require_http_methods(["POST"])
 def analyzeFiles(httpRequest):
-    """Analyze uploaded audio files and return instrument predictions"""
-    try:
-        uploadedFiles = httpRequest.FILES.getlist("file")
-        if not uploadedFiles:
-            return JsonResponse({"error": "No files uploaded"}, status=400)
+    uploadedFiles = httpRequest.FILES.getlist("file")
+    if not uploadedFiles:
+        return JsonResponse({"error": "No files uploaded"}, status=400)
 
-        if len(uploadedFiles) > 10:
-            return JsonResponse(
-                {"error": "Too many files. Maximum 10 files allowed."},
-                status=400
-            )
-
-        instrumentLists = []
-        for uploadedFile in uploadedFiles:
-            try:
-                # Perform analysis on the uploaded files
-                instrumentList = getInstrumentsFromFile(uploadedFile)
-
-                # Save to database if user is authenticated
-                if httpRequest.user.is_authenticated:
-                    analysis_result = AnalysisResult.objects.create(
-                        user=httpRequest.user,
-                        filename=uploadedFile.name
-                    )
-
-                    # Save predictions (only those above 50% confidence are returned from predictor)
-                    for pred in instrumentList:
-                        InstrumentPrediction.objects.create(
-                            analysis_result=analysis_result,
-                            instrument=pred['instrument'],
-                            confidence=pred['confidence']
-                        )
-
-                instrumentLists.append({
-                    "filename": uploadedFile.name,
-                    "predictions": instrumentList
-                })
-            except ValueError as ve:
-                logger.warning(
-                    f"Validation error for {uploadedFile.name}: {ve}")
-                instrumentLists.append({
-                    "filename": uploadedFile.name,
-                    "error": str(ve)
-                })
-            except Exception as e:
-                logger.error(
-                    f"Error processing {uploadedFile.name}: {e}", exc_info=True)
-                instrumentLists.append({
-                    "filename": uploadedFile.name,
-                    "error": "Failed to process file"
-                })
-
-        return JsonResponse({"results": instrumentLists}, status=200)
-
-    except Exception as e:
-        logger.error(f"Unexpected error in analyzeFiles: {e}", exc_info=True)
+    if len(uploadedFiles) > 10:
         return JsonResponse(
-            {"error": "Internal server error"},
-            status=500
+            {"error": "Too many files. Maximum 10 files allowed."},
+            status=400
         )
+
+    instrumentLists = []
+    db_saves = []  # Defer database operations until after all predictions
+
+    for uploadedFile in uploadedFiles:
+        try:
+            instrumentList = getInstrumentsFromFile(uploadedFile)
+
+            instrumentLists.append({
+                "filename": uploadedFile.name,
+                "predictions": instrumentList
+            })
+
+            # Queue database save for later
+            if httpRequest.user.is_authenticated:
+                db_saves.append((uploadedFile.name, instrumentList))
+
+        except ValueError as ve:
+            instrumentLists.append({
+                "filename": uploadedFile.name,
+                "error": str(ve)
+            })
+
+    # Save to database after all predictions complete
+    if httpRequest.user.is_authenticated:
+        for filename, predictions in db_saves:
+            try:
+                # Skip if this filename already exists for this user
+                if AnalysisResult.objects.filter(user=httpRequest.user, filename=filename).exists():
+                    continue
+
+                analysis_result = AnalysisResult.objects.create(
+                    user=httpRequest.user,
+                    filename=filename
+                )
+                for pred in predictions:
+                    InstrumentPrediction.objects.create(
+                        analysis_result=analysis_result,
+                        instrument=pred['instrument'],
+                        confidence=pred['confidence']
+                    )
+            except Exception as e:
+                logger.error(f"Database save failed for {filename}: {e}", exc_info=True)
+                # Continue processing other files even if one fails
+
+    return JsonResponse({"results": instrumentLists}, status=200)
 
 
 @csrf_exempt
 @require_http_methods(["POST"])
 def signup(request):
-    """Create a new user account using Django's auth system."""
     try:
         data = json.loads(request.body.decode("utf-8"))
     except json.JSONDecodeError:
@@ -156,7 +157,6 @@ def signup(request):
 @csrf_exempt
 @require_http_methods(["POST"])
 def login(request):
-    """Log in an existing user using email and password."""
     try:
         data = json.loads(request.body.decode("utf-8"))
     except json.JSONDecodeError:
@@ -189,7 +189,6 @@ def login(request):
 @csrf_exempt
 @require_http_methods(["POST"])
 def logout(request):
-    """Log out the current user (if any)."""
     auth_logout(request)
     return JsonResponse({"success": True}, status=200)
 
@@ -197,16 +196,14 @@ def logout(request):
 @csrf_exempt
 @require_http_methods(["GET"])
 def get_history(request):
-    """Get analysis history for the authenticated user"""
     if not request.user.is_authenticated:
         return JsonResponse({"error": "Authentication required"}, status=401)
 
-    # Get query parameters for filtering
-    instrument_filter = request.GET.get('instrument')  # Optional: filter by instrument
-    search_query = request.GET.get('search')  # Optional: search filenames
+    # Optional filters and a hard cap on result count
+    instrument_filter = request.GET.get('instrument')
+    search_query = request.GET.get('search')
     limit = min(int(request.GET.get('limit', 1000)), 1000)  # Max 1000 results
 
-    # Build query
     results = AnalysisResult.objects.filter(user=request.user)
 
     if instrument_filter:
@@ -215,10 +212,8 @@ def get_history(request):
     if search_query:
         results = results.filter(filename__icontains=search_query)
 
-    # Limit results
     results = results[:limit]
 
-    # Serialize data
     history_data = []
     for result in results:
         history_data.append({
