@@ -1,6 +1,37 @@
 import React, { useState } from 'react'
 import logo from "./assets/favicon.png";
+// --- NEW ICON IMPORTS ---
+import { FaGuitar, FaDrum, FaMicrophone, FaKeyboard } from 'react-icons/fa';
+import { GiViolin, GiTrumpet, GiGuitarBassHead } from 'react-icons/gi'; 
 
+
+// --- NEW ICON MAPPING ---
+// A dictionary to map instrument strings to their icon components
+const instrumentIconMap: { [key: string]: React.ElementType } = {
+  'guitar': FaGuitar,
+  'bass': GiGuitarBassHead,
+  'keyboard': FaKeyboard,
+  'drums': FaDrum,
+  'strings': GiViolin,
+  'brass': GiTrumpet,
+  'vocals': FaMicrophone,
+};
+
+// --- NEW HELPER FUNCTION ---
+// Function to get the correct icon component, defaulting to null if not found
+const InstrumentIcon = ({ name }: { name: string }) => {
+  const IconComponent = instrumentIconMap[name.toLowerCase()];
+  
+  if (!IconComponent) {
+    return null; // Return nothing if the instrument name isn't mapped
+  }
+
+  // Render the component with desired size
+  return <IconComponent size={20} style={{ marginRight: '5px' }} />;
+};
+
+
+// --- EXISTING TYPES ---
 type FileWithPreview = {
   file: File
   previewUrl: string
@@ -12,6 +43,7 @@ type FileAnalysisResult = {
   instruments: string[]
   error?: string
 }
+// -----------------------
 
 function App() {
   const [files, setFiles] = useState<FileWithPreview[]>([])
@@ -238,7 +270,18 @@ function App() {
                   {!result.error && result.instruments.length > 0 && (
                     <div className="tags">
                       {result.instruments.map((inst, i) => (
-                        <span key={i} className="tag">
+                        <span 
+                          key={i} 
+                          className="tag"
+                          // ADDED STYLING to align the icon and text
+                          style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            fontSize: '16px'
+                          }}
+                        >
+                          {/* --- DYNAMIC ICON COMPONENT --- */}
+                          <InstrumentIcon name={inst} />
                           {inst}
                         </span>
                       ))}
