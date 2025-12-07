@@ -66,33 +66,40 @@ def analyzeFiles(httpRequest):
         )
 
     instrumentLists = []
+    db_saves = []  # Defer database operations until after all predictions
+
     for uploadedFile in uploadedFiles:
         try:
             instrumentList = getInstrumentsFromFile(uploadedFile)
-
-            # if httpRequest.user.is_authenticated:
-            #     # Persist history for logged-in users
-            #     analysis_result = AnalysisResult.objects.create(
-            #         user=httpRequest.user,
-            #         filename=uploadedFile.name
-            #     )
-
-            #     for pred in instrumentList:
-            #         InstrumentPrediction.objects.create(
-            #             analysis_result=analysis_result,
-            #             instrument=pred['instrument'],
-            #             confidence=pred['confidence']
-            #         )
 
             instrumentLists.append({
                 "filename": uploadedFile.name,
                 "predictions": instrumentList
             })
+
+            # Queue database save for later
+            if httpRequest.user.is_authenticated:
+                db_saves.append((uploadedFile.name, instrumentList))
+
         except ValueError as ve:
             instrumentLists.append({
                 "filename": uploadedFile.name,
                 "error": str(ve)
             })
+
+    # Save to database after all predictions complete
+    if httpRequest.user.is_authenticated:
+        for filename, predictions in db_saves:
+            analysis_result = AnalysisResult.objects.create(
+                user=httpRequest.user,
+                filename=filename
+            )
+            for pred in predictions:
+                InstrumentPrediction.objects.create(
+                    analysis_result=analysis_result,
+                    instrument=pred['instrument'],
+                    confidence=pred['confidence']
+                )
 
     return JsonResponse({"results": instrumentLists}, status=200)
 
