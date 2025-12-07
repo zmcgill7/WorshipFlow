@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import logo from "./assets/favicon.png";
 
 const STORAGE_KEY = 'worshipUser'
 
@@ -54,21 +55,9 @@ function Login() {
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
-          <div className="logo-circle">
-            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-              <path
-                d="M20 5L25 15H35L27 22L30 32L20 26L10 32L13 22L5 15H15L20 5Z"
-                fill="url(#gradient)"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              />
-              <defs>
-                <linearGradient id="gradient" x1="5" y1="5" x2="35" y2="35">
-                  <stop offset="0%" stopColor="#60a5fa" />
-                  <stop offset="100%" stopColor="#a5b4fc" />
-                </linearGradient>
-              </defs>
-            </svg>
+         <div className="logo-wrapper">             
+            <img src={logo} alt="Logo" width={115} height={115} />
+            <div className="logo-square"></div>
           </div>
           <h1>Welcome back</h1>
           <p>Sign in to continue to your Worship Flow dashboard</p>

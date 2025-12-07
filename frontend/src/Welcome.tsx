@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import logo from "./assets/favicon.png";
 
 function Welcome() {
   const navigate = useNavigate()
@@ -7,21 +8,9 @@ function Welcome() {
     <div className="welcome-container">
       <div className="welcome-card">
         <div className="welcome-header">
-          <div className="logo-circle large">
-            <svg width="56" height="56" viewBox="0 0 40 40" fill="none">
-              <path
-                d="M20 5L25 15H35L27 22L30 32L20 26L10 32L13 22L5 15H15L20 5Z"
-                fill="url(#gradient)"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              />
-              <defs>
-                <linearGradient id="gradient" x1="5" y1="5" x2="35" y2="35">
-                  <stop offset="0%" stopColor="#60a5fa" />
-                  <stop offset="100%" stopColor="#a5b4fc" />
-                </linearGradient>
-              </defs>
-            </svg>
+          <div className="logo-wrapper">             
+            <img src={logo} alt="Logo" width={115} height={115} />
+            <div className="logo-square"></div>
           </div>
           <h1>Welcome to Worship Flow</h1>
           <p>Plan, organize, and flow through your worship sets with ease.</p>

@@ -40,7 +40,7 @@ function Dashboard() {
         <button onClick={() => navigate('/history')} className="btn-history">
           History
         </button>
-        <div className="logout-bar-right">
+        <div className="logout-bar-right">          
           {userName && <span className="welcome-text">Welcome {userName}</span>}
           <button onClick={handleLogout} className="btn-logout">
             Sign Out

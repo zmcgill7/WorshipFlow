@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import logo from "./assets/favicon.png";
 
 type FileWithPreview = {
   file: File
@@ -146,6 +147,10 @@ function App() {
   return (
     <div className="app">
       <header>
+         <div className="logo-wrapper">             
+            <img src={logo} alt="Logo" width={115} height={115} />
+            <div className="logo-square"></div>
+          </div>        
         <h1>Worship Flow</h1>
         <p>Upload multiple .mp3, .mp4, or .wav files to analyze instruments simultaneously.</p>
       </header>
