@@ -16,12 +16,10 @@ logger = logging.getLogger(__name__)
 def getInstrumentsFromFile(file):
     predictor = apps.get_app_config('core').get_predictor()
 
-    # Check if predictor loaded successfully
     if predictor is None:
         logger.error("Predictor not available - model failed to load")
         raise ValueError("Model not available. Please contact support.")
 
-    # Save uploaded file temporarily
     with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tmp:
         for chunk in file.chunks():
             tmp.write(chunk)
@@ -29,17 +27,20 @@ def getInstrumentsFromFile(file):
 
     try:
         logger.info(f"Processing file: {file.name}")
-        result = predictor.predict_file(tmp_path, return_probabilities=True)
+        try:
+            result = predictor.predict_file(tmp_path, return_probabilities=True)
+        except BaseException as e:  # catch SystemExit and other non-Exception failures
+            logger.error(f"Predictor failed for {file.name}: {e}", exc_info=True)
+            raise ValueError("Audio processing failed. Please try another file.")
 
-        # Convert new format to old format for backward compatibility
-        # Return all instruments with confidence > 50%
+        # Keep instruments above 50% confidence
         filtered_probs = [
             (instrument, confidence)
             for instrument, confidence in result['probabilities'].items()
             if confidence > 0.5
         ]
 
-        # Sort by probability (highest first)
+        # Highest confidence first
         sorted_probs = sorted(filtered_probs, key=lambda x: x[1], reverse=True)
 
         return [
@@ -54,7 +55,6 @@ def getInstrumentsFromFile(file):
 @csrf_exempt
 @require_http_methods(["POST"])
 def analyzeFiles(httpRequest):
-    """Analyze uploaded audio files and return instrument predictions"""
     try:
         uploadedFiles = httpRequest.FILES.getlist("file")
         if not uploadedFiles:
@@ -69,17 +69,15 @@ def analyzeFiles(httpRequest):
         instrumentLists = []
         for uploadedFile in uploadedFiles:
             try:
-                # Perform analysis on the uploaded files
                 instrumentList = getInstrumentsFromFile(uploadedFile)
 
-                # Save to database if user is authenticated
                 if httpRequest.user.is_authenticated:
+                    # Persist history for logged-in users
                     analysis_result = AnalysisResult.objects.create(
                         user=httpRequest.user,
                         filename=uploadedFile.name
                     )
 
-                    # Save predictions (only those above 50% confidence are returned from predictor)
                     for pred in instrumentList:
                         InstrumentPrediction.objects.create(
                             analysis_result=analysis_result,
@@ -119,7 +117,6 @@ def analyzeFiles(httpRequest):
 @csrf_exempt
 @require_http_methods(["POST"])
 def signup(request):
-    """Create a new user account using Django's auth system."""
     try:
         data = json.loads(request.body.decode("utf-8"))
     except json.JSONDecodeError:
@@ -162,7 +159,6 @@ def signup(request):
 @csrf_exempt
 @require_http_methods(["POST"])
 def login(request):
-    """Log in an existing user using email and password."""
     try:
         data = json.loads(request.body.decode("utf-8"))
     except json.JSONDecodeError:
@@ -195,7 +191,6 @@ def login(request):
 @csrf_exempt
 @require_http_methods(["POST"])
 def logout(request):
-    """Log out the current user (if any)."""
     auth_logout(request)
     return JsonResponse({"success": True}, status=200)
 
@@ -203,16 +198,14 @@ def logout(request):
 @csrf_exempt
 @require_http_methods(["GET"])
 def get_history(request):
-    """Get analysis history for the authenticated user"""
     if not request.user.is_authenticated:
         return JsonResponse({"error": "Authentication required"}, status=401)
 
-    # Get query parameters for filtering
-    instrument_filter = request.GET.get('instrument')  # Optional: filter by instrument
-    search_query = request.GET.get('search')  # Optional: search filenames
+    # Optional filters and a hard cap on result count
+    instrument_filter = request.GET.get('instrument')
+    search_query = request.GET.get('search')
     limit = min(int(request.GET.get('limit', 1000)), 1000)  # Max 1000 results
 
-    # Build query
     results = AnalysisResult.objects.filter(user=request.user)
 
     if instrument_filter:
@@ -221,10 +214,8 @@ def get_history(request):
     if search_query:
         results = results.filter(filename__icontains=search_query)
 
-    # Limit results
     results = results[:limit]
 
-    # Serialize data
     history_data = []
     for result in results:
         history_data.append({
