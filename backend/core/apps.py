@@ -9,13 +9,17 @@ class CoreConfig(AppConfig):
     predictor = None  # Singleton instance
 
     def ready(self):
-        """Called when Django starts - warm up database connection"""
+        """Called when Django starts - warm up database connection and model"""
         from django.db import connection
         try:
             # Force database connection at startup to avoid first-request timeout
             connection.ensure_connection()
         except Exception:
             pass  # Connection will be retried on first request
+
+        # Start loading model in background thread
+        import threading
+        threading.Thread(target=self.get_predictor, daemon=True).start()
 
     @classmethod
     def get_predictor(cls):
