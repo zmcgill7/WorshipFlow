@@ -90,20 +90,24 @@ def analyzeFiles(httpRequest):
     # Save to database after all predictions complete
     if httpRequest.user.is_authenticated:
         for filename, predictions in db_saves:
-            # Skip if this filename already exists for this user
-            if AnalysisResult.objects.filter(user=httpRequest.user, filename=filename).exists():
-                continue
+            try:
+                # Skip if this filename already exists for this user
+                if AnalysisResult.objects.filter(user=httpRequest.user, filename=filename).exists():
+                    continue
 
-            analysis_result = AnalysisResult.objects.create(
-                user=httpRequest.user,
-                filename=filename
-            )
-            for pred in predictions:
-                InstrumentPrediction.objects.create(
-                    analysis_result=analysis_result,
-                    instrument=pred['instrument'],
-                    confidence=pred['confidence']
+                analysis_result = AnalysisResult.objects.create(
+                    user=httpRequest.user,
+                    filename=filename
                 )
+                for pred in predictions:
+                    InstrumentPrediction.objects.create(
+                        analysis_result=analysis_result,
+                        instrument=pred['instrument'],
+                        confidence=pred['confidence']
+                    )
+            except Exception as e:
+                logger.error(f"Database save failed for {filename}: {e}", exc_info=True)
+                # Continue processing other files even if one fails
 
     return JsonResponse({"results": instrumentLists}, status=200)
 
