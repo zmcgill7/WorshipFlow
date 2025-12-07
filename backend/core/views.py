@@ -4,6 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
+from .models import AnalysisResult, InstrumentPrediction
 import tempfile
 import os
 import logging
@@ -48,6 +49,22 @@ def analyzeFiles(httpRequest):
             try:
                 # Perform analysis on the uploaded files
                 instrumentList = getInstrumentsFromFile(uploadedFile)
+
+                # Save to database if user is authenticated
+                if httpRequest.user.is_authenticated:
+                    analysis_result = AnalysisResult.objects.create(
+                        user=httpRequest.user,
+                        filename=uploadedFile.name
+                    )
+
+                    # Save predictions (only those above 50% confidence are returned from predictor)
+                    for pred in instrumentList:
+                        InstrumentPrediction.objects.create(
+                            analysis_result=analysis_result,
+                            instrument=pred['instrument'],
+                            confidence=pred['confidence']
+                        )
+
                 instrumentLists.append({
                     "filename": uploadedFile.name,
                     "predictions": instrumentList
@@ -159,3 +176,45 @@ def logout(request):
     """Log out the current user (if any)."""
     auth_logout(request)
     return JsonResponse({"success": True}, status=200)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def get_history(request):
+    """Get analysis history for the authenticated user"""
+    if not request.user.is_authenticated:
+        return JsonResponse({"error": "Authentication required"}, status=401)
+
+    # Get query parameters for filtering
+    instrument_filter = request.GET.get('instrument')  # Optional: filter by instrument
+    search_query = request.GET.get('search')  # Optional: search filenames
+    limit = min(int(request.GET.get('limit', 1000)), 1000)  # Max 1000 results
+
+    # Build query
+    results = AnalysisResult.objects.filter(user=request.user)
+
+    if instrument_filter:
+        results = results.filter(predictions__instrument__iexact=instrument_filter).distinct()
+
+    if search_query:
+        results = results.filter(filename__icontains=search_query)
+
+    # Limit results
+    results = results[:limit]
+
+    # Serialize data
+    history_data = []
+    for result in results:
+        history_data.append({
+            'id': result.id,
+            'filename': result.filename,
+            'predictions': [
+                {
+                    'instrument': pred.instrument,
+                    'confidence': pred.confidence
+                }
+                for pred in result.predictions.all()
+            ]
+        })
+
+    return JsonResponse({'results': history_data}, status=200)
