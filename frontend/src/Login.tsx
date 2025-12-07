@@ -5,7 +5,6 @@ const STORAGE_KEY = 'worshipUser'
 
 function Login() {
   const navigate = useNavigate()
-  const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -76,18 +75,6 @@ function Login() {
         </div>
 
         <form onSubmit={handleSubmit} className="login-form">
-          <div className="form-group">
-            <label htmlFor="username">Username </label>
-            <input
-              type="text"
-              id="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="worshipadmin or leave blank if you signed up"
-              autoComplete="username"
-            />
-          </div>
-
           <div className="form-group">
             <label htmlFor="email">Email</label>
             <input

@@ -18,8 +18,8 @@ class CoreConfig(AppConfig):
             pass  # Connection will be retried on first request
 
         # Start loading model in background thread
-        import threading
-        threading.Thread(target=self.get_predictor, daemon=True).start()
+        # import threading
+        # threading.Thread(target=self.get_predictor, daemon=True).start()
 
     @classmethod
     def get_predictor(cls):
