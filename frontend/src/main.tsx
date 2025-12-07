@@ -6,11 +6,13 @@ import Login from './Login'
 import Signup from './Signup'
 import Dashboard from './Dashboard'
 import ProtectedRoute from './ProtectedRoute'
+import BackgroundVisual from './BackgroundVisual'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
+      <BackgroundVisual />
       <Routes>
         <Route path="/" element={<Welcome />} />
         <Route path="/login" element={<Login />} />
