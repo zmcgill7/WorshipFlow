@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
-import logo from "./assets/favicon.png";
+
 // --- NEW ICON IMPORTS ---
 import { FaGuitar, FaDrum, FaMicrophone, FaKeyboard } from 'react-icons/fa';
-import { GiViolin, GiTrumpet, GiGuitarBassHead } from 'react-icons/gi'; 
+import { GiViolin, GiTrumpet, GiGuitarBassHead } from 'react-icons/gi';
 
 
 // --- NEW ICON MAPPING ---
@@ -21,7 +21,7 @@ const instrumentIconMap: { [key: string]: React.ElementType } = {
 // Function to get the correct icon component, defaulting to null if not found
 const InstrumentIcon = ({ name }: { name: string }) => {
   const IconComponent = instrumentIconMap[name.toLowerCase()];
-  
+
   if (!IconComponent) {
     return null; // Return nothing if the instrument name isn't mapped
   }
@@ -179,10 +179,10 @@ function App() {
   return (
     <div className="app">
       <header>
-         <div className="logo-wrapper">             
-            <img src={logo} alt="Logo" width={115} height={115} />
-            <div className="logo-square"></div>
-          </div>        
+        <div className="logo-wrapper">
+          <img src={logo} alt="Logo" width={115} height={115} />
+          <div className="logo-square"></div>
+        </div>
         <h1>Worship Flow</h1>
         <p>Upload multiple .mp3, .mp4, or .wav files to analyze instruments simultaneously.</p>
       </header>
@@ -270,13 +270,13 @@ function App() {
                   {!result.error && result.instruments.length > 0 && (
                     <div className="tags">
                       {result.instruments.map((inst, i) => (
-                        <span 
-                          key={i} 
+                        <span
+                          key={i}
                           className="tag"
                           // ADDED STYLING to align the icon and text
-                          style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
                             fontSize: '16px'
                           }}
                         >
