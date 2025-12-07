@@ -36,6 +36,9 @@ RUN DJANGO_SECRET_KEY=dummy-secret-key python manage.py collectstatic --noinput
 # Only uncomment if testing locally using sqlite otherwise it is handled in GCP using Cloud SQL migrations
 # RUN DJANGO_SECRET_KEY=dummy-secret-key python manage.py migrate --noinput
 
+# Pre-compile TensorFlow and librosa to speed up cold starts
+RUN python -c "import tensorflow; import librosa"
+
 # Requied to avoid weird Numba issues that exist in GCP runtime environments
 ENV NUMBA_CACHE_DIR=/tmp/numba_cache
 ENV OMP_NUM_THREADS=1
