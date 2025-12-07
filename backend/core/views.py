@@ -70,19 +70,19 @@ def analyzeFiles(httpRequest):
         try:
             instrumentList = getInstrumentsFromFile(uploadedFile)
 
-            if httpRequest.user.is_authenticated:
-                # Persist history for logged-in users
-                analysis_result = AnalysisResult.objects.create(
-                    user=httpRequest.user,
-                    filename=uploadedFile.name
-                )
+            # if httpRequest.user.is_authenticated:
+            #     # Persist history for logged-in users
+            #     analysis_result = AnalysisResult.objects.create(
+            #         user=httpRequest.user,
+            #         filename=uploadedFile.name
+            #     )
 
-                for pred in instrumentList:
-                    InstrumentPrediction.objects.create(
-                        analysis_result=analysis_result,
-                        instrument=pred['instrument'],
-                        confidence=pred['confidence']
-                    )
+            #     for pred in instrumentList:
+            #         InstrumentPrediction.objects.create(
+            #             analysis_result=analysis_result,
+            #             instrument=pred['instrument'],
+            #             confidence=pred['confidence']
+            #         )
 
             instrumentLists.append({
                 "filename": uploadedFile.name,
