@@ -105,12 +105,25 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if os.environ.get('CLOUD_SQL_CONNECTION'):
+    # Production: Cloud SQL PostgreSQL
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('DB_NAME', 'worshipflow'),
+            'USER': os.environ.get('DB_USER', 'worshipflow_user'),
+            'PASSWORD': os.environ.get('DB_PASSWORD'),
+            'HOST': f"/cloudsql/{os.environ.get('CLOUD_SQL_CONNECTION')}",
+        }
     }
-}
+else:
+    # Development: Local SQLite
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation

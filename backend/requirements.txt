@@ -4,6 +4,7 @@ django-cors-headers
 asgiref
 gunicorn
 whitenoise
+psycopg2-binary
 
 # TensorFlow & Deep Learning (compatible with numpy 1.26.4)
 tensorflow

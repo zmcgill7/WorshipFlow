@@ -28,7 +28,9 @@ COPY backend .
 COPY --from=build-frontend /app/frontend/dist /app/frontend/dist
 # Get static files collected and ensure database schema is initialized
 RUN DJANGO_SECRET_KEY=dummy-secret-key python manage.py collectstatic --noinput
-RUN DJANGO_SECRET_KEY=dummy-secret-key python manage.py migrate --noinput
+
+# Only uncomment if testing locally using sqlite otherwise it is handled in GCP using Cloud SQL migrations
+# RUN DJANGO_SECRET_KEY=dummy-secret-key python manage.py migrate --noinput
 
 # Requied to avoid weird Numba issues that exist in GCP runtime environments
 ENV NUMBA_CACHE_DIR=/tmp/numba_cache
