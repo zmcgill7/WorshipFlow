@@ -28,10 +28,13 @@ def getInstrumentsFromFile(file):
     try:
         logger.info(f"Processing file: {file.name}")
         try:
-            result = predictor.predict_file(tmp_path, return_probabilities=True)
+            result = predictor.predict_file(
+                tmp_path, return_probabilities=True)
         except BaseException as e:  # catch SystemExit and other non-Exception failures
-            logger.error(f"Predictor failed for {file.name}: {e}", exc_info=True)
-            raise ValueError("Audio processing failed. Please try another file.")
+            logger.error(
+                f"Predictor failed for {file.name}: {e}", exc_info=True)
+            raise ValueError(
+                "Audio processing failed. Please try another file.")
 
         # Keep instruments above 50% confidence
         filtered_probs = [
@@ -59,19 +62,13 @@ def analyzeFiles(httpRequest):
     if not uploadedFiles:
         return JsonResponse({"error": "No files uploaded"}, status=400)
 
-    if len(uploadedFiles) > 10:
-        return JsonResponse(
-            {"error": "Too many files. Maximum 10 files allowed."},
-            status=400
-        )
-
     instrumentLists = []
     db_saves = []  # Defer database operations until after all predictions
 
     for uploadedFile in uploadedFiles:
         try:
             instrumentList = getInstrumentsFromFile(uploadedFile)
-
+            logger.info("Predicted instruments!")
             instrumentLists.append({
                 "filename": uploadedFile.name,
                 "predictions": instrumentList
@@ -195,21 +192,25 @@ def get_history(request):
     if not request.user.is_authenticated:
         return JsonResponse({"error": "Authentication required"}, status=401)
 
-    results = AnalysisResult.objects.filter(user=request.user).prefetch_related('predictions')
+    results = AnalysisResult.objects.filter(
+        user=request.user).prefetch_related('predictions')
 
     instruments_list = request.GET.get('instruments', '')
     filter_mode = request.GET.get('filterMode', 'none')
 
     if instruments_list and filter_mode != 'none':
-        instruments = [inst.strip() for inst in instruments_list.split(',') if inst.strip()]
+        instruments = [inst.strip()
+                       for inst in instruments_list.split(',') if inst.strip()]
 
         if instruments:
             if filter_mode == 'exclude':
                 for instrument in instruments:
-                    results = results.exclude(predictions__instrument__iexact=instrument)
+                    results = results.exclude(
+                        predictions__instrument__iexact=instrument)
             elif filter_mode == 'require':
                 for instrument in instruments:
-                    results = results.filter(predictions__instrument__iexact=instrument)
+                    results = results.filter(
+                        predictions__instrument__iexact=instrument)
                 results = results.distinct()
 
     history_data = []
