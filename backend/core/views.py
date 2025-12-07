@@ -195,20 +195,17 @@ def get_history(request):
     if not request.user.is_authenticated:
         return JsonResponse({"error": "Authentication required"}, status=401)
 
-    # Optional filters and a hard cap on result count
+    # Optional filters
     instrument_filter = request.GET.get('instrument')
     search_query = request.GET.get('search')
-    limit = min(int(request.GET.get('limit', 1000)), 1000)  # Max 1000 results
 
-    results = AnalysisResult.objects.filter(user=request.user)
+    results = AnalysisResult.objects.filter(user=request.user).prefetch_related('predictions')
 
     if instrument_filter:
         results = results.filter(predictions__instrument__iexact=instrument_filter).distinct()
 
     if search_query:
         results = results.filter(filename__icontains=search_query)
-
-    results = results[:limit]
 
     history_data = []
     for result in results:
