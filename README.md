@@ -19,6 +19,8 @@ An intelligent deep learning system for classifying musical instruments commonly
 
 ## Overview
 
+https://github.com/user-attachments/assets/88d520e6-3b4a-4ca9-a549-0036becd44d8
+
 Worship Flow is designed to automatically identify and classify musical instruments in worship music recordings. Whether you're organizing a music library, analyzing recordings, or building music information retrieval systems, this tool provides accurate, fast instrument classification.
 
 The system uses transfer learning with Google's YAMNet (a pre-trained audio classification model) as a feature extractor, combined with a custom classification head trained specifically on worship music instruments.
