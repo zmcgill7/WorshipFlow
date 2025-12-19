@@ -2,15 +2,17 @@ from django.http import JsonResponse
 from django.apps import apps
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
-from django.contrib.auth.models import User
-from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
-from .models import AnalysisResult, InstrumentPrediction
+from .middleware import firebase_auth_required
+from firebase_admin import firestore
 import tempfile
 import os
 import logging
-import json
+import hashlib
 
 logger = logging.getLogger(__name__)
+
+# Check if running in dev mode
+DEV_MODE = os.environ.get('DJANGO_DEBUG') == 'True'
 
 
 def getInstrumentsFromFile(file):
@@ -57,13 +59,14 @@ def getInstrumentsFromFile(file):
 
 @csrf_exempt
 @require_http_methods(["POST"])
+@firebase_auth_required
 def analyzeFiles(httpRequest):
     uploadedFiles = httpRequest.FILES.getlist("file")
     if not uploadedFiles:
         return JsonResponse({"error": "No files uploaded"}, status=400)
 
     instrumentLists = []
-    db_saves = []  # Defer database operations until after all predictions
+    firestore_saves = []  # Defer Firestore operations until after all predictions
 
     for uploadedFile in uploadedFiles:
         try:
@@ -74,9 +77,9 @@ def analyzeFiles(httpRequest):
                 "predictions": instrumentList
             })
 
-            # Queue database save for later
-            if httpRequest.user.is_authenticated:
-                db_saves.append((uploadedFile.name, instrumentList))
+            # Queue Firestore save for later (unless in dev mode)
+            if not DEV_MODE:
+                firestore_saves.append((uploadedFile, instrumentList))
 
         except ValueError as ve:
             instrumentLists.append({
@@ -84,151 +87,104 @@ def analyzeFiles(httpRequest):
                 "error": str(ve)
             })
 
-    # Save to database after all predictions complete
-    if httpRequest.user.is_authenticated:
-        for filename, predictions in db_saves:
+    # Save to Firestore after all predictions complete (skip in dev mode)
+    if DEV_MODE:
+        logger.info("DEV MODE: Skipping Firestore saves")
+    else:
+        user_uid = httpRequest.firebase_user['uid']
+        db = apps.get_app_config('core').get_db()
+
+        for uploaded_file, predictions in firestore_saves:
             try:
-                # Skip if this filename already exists for this user
-                if AnalysisResult.objects.filter(user=httpRequest.user, filename=filename).exists():
+                # Calculate file hash for deduplication (hash of file content)
+                file_hasher = hashlib.sha256()
+                uploaded_file.seek(0)  # Reset file pointer
+                for chunk in uploaded_file.chunks():
+                    file_hasher.update(chunk)
+                file_hash = file_hasher.hexdigest()
+
+                # Check if this file hash already exists for this user
+                analyses_ref = db.collection('users').document(user_uid).collection('analyses')
+                existing = analyses_ref.where('file_hash', '==', file_hash).limit(1).get()
+
+                if len(list(existing)) > 0:
+                    logger.info(f"File {uploaded_file.name} already analyzed (hash: {file_hash})")
                     continue
 
-                analysis_result = AnalysisResult.objects.create(
-                    user=httpRequest.user,
-                    filename=filename
-                )
-                for pred in predictions:
-                    InstrumentPrediction.objects.create(
-                        analysis_result=analysis_result,
-                        instrument=pred['instrument'],
-                        confidence=pred['confidence']
-                    )
+                # Create analysis document
+                analysis_data = {
+                    'filename': uploaded_file.name,
+                    'file_hash': file_hash,
+                    'instruments': [pred['instrument'].lower() for pred in predictions],
+                    'predictions': predictions,
+                    'timestamp': firestore.SERVER_TIMESTAMP
+                }
+
+                analyses_ref.add(analysis_data)
+                logger.info(f"Saved analysis for {uploaded_file.name} to Firestore")
+
             except Exception as e:
-                logger.error(f"Database save failed for {filename}: {e}", exc_info=True)
+                logger.error(f"Firestore save failed for {uploaded_file.name}: {e}", exc_info=True)
                 # Continue processing other files even if one fails
 
     return JsonResponse({"results": instrumentLists}, status=200)
 
 
 @csrf_exempt
-@require_http_methods(["POST"])
-def signup(request):
-    try:
-        data = json.loads(request.body.decode("utf-8"))
-    except json.JSONDecodeError:
-        return JsonResponse({"error": "Invalid JSON body."}, status=400)
-
-    name = (data.get("name") or "").strip()
-    email = (data.get("email") or "").strip().lower()
-    password = data.get("password") or ""
-
-    if not name or not email or not password:
-        return JsonResponse(
-            {"error": "Name, email, and password are required."}, status=400
-        )
-
-    if User.objects.filter(email=email).exists():
-        return JsonResponse(
-            {"error": "A user with this email already exists."}, status=400
-        )
-
-    # Use email as the username to keep things simple
-    user = User.objects.create_user(
-        username=email,
-        email=email,
-        password=password,
-        first_name=name,
-    )
-
-    auth_login(request, user)
-
-    return JsonResponse(
-        {
-            "id": user.id,
-            "name": user.first_name or user.username,
-            "email": user.email,
-        },
-        status=201,
-    )
-
-
-@csrf_exempt
-@require_http_methods(["POST"])
-def login(request):
-    try:
-        data = json.loads(request.body.decode("utf-8"))
-    except json.JSONDecodeError:
-        return JsonResponse({"error": "Invalid JSON body."}, status=400)
-
-    email = (data.get("email") or "").strip().lower()
-    password = data.get("password") or ""
-
-    if not email or not password:
-        return JsonResponse(
-            {"error": "Email and password are required."}, status=400
-        )
-
-    user = authenticate(request, username=email, password=password)
-    if user is None:
-        return JsonResponse({"error": "Invalid email or password."}, status=400)
-
-    auth_login(request, user)
-
-    return JsonResponse(
-        {
-            "id": user.id,
-            "name": user.first_name or user.username,
-            "email": user.email,
-        },
-        status=200,
-    )
-
-
-@csrf_exempt
-@require_http_methods(["POST"])
-def logout(request):
-    auth_logout(request)
-    return JsonResponse({"success": True}, status=200)
-
-
-@csrf_exempt
 @require_http_methods(["GET"])
+@firebase_auth_required
 def get_history(request):
-    if not request.user.is_authenticated:
-        return JsonResponse({"error": "Authentication required"}, status=401)
+    # Get Firestore client (lazy initialization)
+    db = apps.get_app_config('core').get_db()
+    user_uid = request.firebase_user['uid']
 
-    results = AnalysisResult.objects.filter(
-        user=request.user).prefetch_related('predictions')
+    try:
+        # Fetch all analyses for user
+        analyses_ref = db.collection('users').document(user_uid).collection('analyses')
+        analyses = list(analyses_ref.order_by('timestamp', direction=firestore.Query.DESCENDING).stream())
 
-    instruments_list = request.GET.get('instruments', '')
-    filter_mode = request.GET.get('filterMode', 'none')
+        # Get filter parameters
+        instruments_list = request.GET.get('instruments', '')
+        filter_mode = request.GET.get('filterMode', 'none')
 
-    if instruments_list and filter_mode != 'none':
-        instruments = [inst.strip()
-                       for inst in instruments_list.split(',') if inst.strip()]
+        history_data = []
 
-        if instruments:
-            if filter_mode == 'exclude':
-                for instrument in instruments:
-                    results = results.exclude(
-                        predictions__instrument__iexact=instrument)
-            elif filter_mode == 'require':
-                for instrument in instruments:
-                    results = results.filter(
-                        predictions__instrument__iexact=instrument)
-                results = results.distinct()
+        for doc in analyses:
+            data = doc.to_dict()
+            analysis_item = {
+                'id': doc.id,
+                'filename': data.get('filename', ''),
+                'predictions': data.get('predictions', [])
+            }
+            history_data.append(analysis_item)
 
-    history_data = []
-    for result in results:
-        history_data.append({
-            'id': result.id,
-            'filename': result.filename,
-            'predictions': [
-                {
-                    'instrument': pred.instrument,
-                    'confidence': pred.confidence
-                }
-                for pred in result.predictions.all()
-            ]
-        })
+        # Client-side filtering (Firestore limitations)
+        if instruments_list and filter_mode != 'none':
+            instruments = [inst.strip().lower()
+                           for inst in instruments_list.split(',') if inst.strip()]
 
-    return JsonResponse({'results': history_data}, status=200)
+            if instruments:
+                if filter_mode == 'exclude':
+                    # Exclude analyses that contain ANY of the specified instruments
+                    history_data = [
+                        item for item in history_data
+                        if not any(
+                            inst in [p['instrument'].lower() for p in item['predictions']]
+                            for inst in instruments
+                        )
+                    ]
+                elif filter_mode == 'require':
+                    # Require analyses that contain ALL of the specified instruments
+                    history_data = [
+                        item for item in history_data
+                        if all(
+                            any(inst == p['instrument'].lower() for p in item['predictions'])
+                            for inst in instruments
+                        )
+                    ]
+
+        return JsonResponse({'results': history_data}, status=200)
+
+    except Exception as e:
+        logger.error(f"Failed to fetch history: {e}", exc_info=True)
+        return JsonResponse({'error': 'Failed to fetch history'}, status=500)

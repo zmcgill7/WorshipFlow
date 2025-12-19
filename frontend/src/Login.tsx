@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { signInWithEmailAndPassword } from 'firebase/auth'
+import { auth } from './firebase'
 
 const logo = '/assets/favicon.png';
-
-const STORAGE_KEY = 'worshipUser'
 
 function Login() {
   const navigate = useNavigate()
@@ -18,35 +18,18 @@ function Login() {
     setIsLoading(true)
 
     try {
-      const response = await fetch('/api/login/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          // "username" is no longer used for auth; we authenticate via email + password
-          email: email.trim(),
-          password,
-        }),
-      })
-
-      const data = await response.json().catch(() => ({}))
-
-      if (!response.ok) {
-        setError(data.error || 'Invalid email or password. Please try again.')
-        return
-      }
-
-      localStorage.setItem('isAuthenticated', 'true')
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ id: data.id, name: data.name, email: data.email }),
-      )
-
+      await signInWithEmailAndPassword(auth, email.trim(), password)
       navigate('/dashboard')
-    } catch (err) {
-      setError('Unable to sign in. Please try again later.')
+    } catch (err: any) {
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+        setError('Invalid email or password. Please try again.')
+      } else if (err.code === 'auth/invalid-email') {
+        setError('Invalid email format.')
+      } else if (err.code === 'auth/too-many-requests') {
+        setError('Too many failed attempts. Please try again later.')
+      } else {
+        setError('Unable to sign in. Please try again later.')
+      }
     } finally {
       setIsLoading(false)
     }

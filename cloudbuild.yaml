@@ -24,25 +24,6 @@ steps:
       '--allow-unauthenticated'
     ]
 
-  # Run database migrations after deployment
-  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
-    entrypoint: gcloud
-    args: [
-      'run', 'jobs', 'update', 'worship-flow-migrate',
-      '--image', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$SHORT_SHA',
-      '--region', '$_REGION'
-    ]
-    # Ignore errors if job doesn't exist yet
-    allowFailure: true
-
-  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
-    entrypoint: gcloud
-    args: [
-      'run', 'jobs', 'execute', 'worship-flow-migrate',
-      '--region', '$_REGION',
-      '--wait'
-    ]
-
 options:
   logging: CLOUD_LOGGING_ONLY
 images:

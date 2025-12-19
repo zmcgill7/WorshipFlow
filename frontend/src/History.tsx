@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { signOut } from 'firebase/auth'
+import { auth } from './firebase'
 // --- NEW ICON IMPORTS ---
 import { FaGuitar, FaDrum, FaMicrophone, FaKeyboard } from 'react-icons/fa';
 import { GiViolin, GiTrumpet, GiGuitarBassHead } from 'react-icons/gi'; 
@@ -53,16 +55,15 @@ function History() {
   const [userName, setUserName] = useState<string | null>(null)
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('worshipUser')
-      if (stored) {
-        const parsed = JSON.parse(stored)
-        const nameFromStorage = parsed.name || parsed.email || null
-        setUserName(nameFromStorage)
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        setUserName(user.displayName || user.email || null)
+      } else {
+        setUserName(null)
       }
-    } catch {
-      setUserName(null)
-    }
+    })
+
+    return () => unsubscribe()
   }, [])
 
   useEffect(() => {
@@ -82,9 +83,16 @@ function History() {
         params.append('filterMode', 'none')
       }
 
+      // Get Firebase auth token
+      const headers: HeadersInit = {}
+      if (auth.currentUser) {
+        const token = await auth.currentUser.getIdToken()
+        headers['Authorization'] = `Bearer ${token}`
+      }
+
       const response = await fetch(`/api/history/?${params.toString()}`, {
         method: 'GET',
-        credentials: 'include',
+        headers,
       })
 
       if (!response.ok) {
@@ -110,15 +118,10 @@ function History() {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/logout/', {
-        method: 'POST',
-        credentials: 'include',
-      })
+      await signOut(auth)
+      navigate('/')
     } catch (err) {
-      // Ignore network errors on logout
-    } finally {
-      localStorage.removeItem('isAuthenticated')
-      localStorage.removeItem('worshipUser')
+      console.error('Logout error:', err)
       navigate('/')
     }
   }
