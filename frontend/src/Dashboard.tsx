@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { signOut } from 'firebase/auth'
+import { auth } from './firebase'
 import App from './App'
 
 function Dashboard() {
@@ -7,29 +9,23 @@ function Dashboard() {
   const [userName, setUserName] = useState<string | null>(null)
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('worshipUser')
-      if (stored) {
-        const parsed = JSON.parse(stored)
-        const nameFromStorage = parsed.name || parsed.email || null
-        setUserName(nameFromStorage)
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        setUserName(user.displayName || user.email || null)
+      } else {
+        setUserName(null)
       }
-    } catch {
-      setUserName(null)
-    }
+    })
+
+    return () => unsubscribe()
   }, [])
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/logout/', {
-        method: 'POST',
-        credentials: 'include',
-      })
+      await signOut(auth)
+      navigate('/')
     } catch (err) {
-      // Ignore network errors on logout; still clear local state
-    } finally {
-      localStorage.removeItem('isAuthenticated')
-      localStorage.removeItem('worshipUser')
+      console.error('Logout error:', err)
       navigate('/')
     }
   }

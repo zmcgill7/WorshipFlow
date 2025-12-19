@@ -1,5 +1,5 @@
 # --- Stage 1: build frontend ---
-FROM node:22-bookworm AS build-frontend
+FROM node:22-bookworm-slim AS build-frontend
 
 # Sets the working directory name inside of the docker image
 WORKDIR /app
@@ -19,11 +19,22 @@ FROM python:3.11-slim AS runtime
 
 WORKDIR /app/backend
 
-RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates libpq-dev build-essential && rm -rf /var/lib/apt/lists/*
+# Install build dependencies temporarily for compiling Python packages
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        curl \
+        ca-certificates \
+        build-essential && \
+    rm -rf /var/lib/apt/lists/*
 
 # Copy only the backend requirements.txt before running pip install
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Remove build dependencies after pip install to reduce final image size (~300MB savings)
+RUN apt-get purge -y --auto-remove build-essential && \
+    rm -rf /var/lib/apt/lists/*
+
 # Now we copy the rest of the backend source code and even if this code is different pip install won't run again
 COPY backend .
 # Pre-bundle YAMNet so runtime doesn't download from tfhub

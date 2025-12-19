@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
+import { auth } from './firebase'
 
 const logo = '/assets/favicon.png';
-
-const STORAGE_KEY = 'worshipUser'
 
 function Signup() {
   const navigate = useNavigate()
@@ -25,36 +25,24 @@ function Signup() {
     setIsLoading(true)
 
     try {
-      const response = await fetch('/api/signup/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          name: name.trim(),
-          email: email.trim(),
-          password,
-        }),
+      const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password)
+
+      // Update user profile with display name
+      await updateProfile(userCredential.user, {
+        displayName: name.trim()
       })
 
-      const data = await response.json().catch(() => ({}))
-
-      if (!response.ok) {
-        setError(data.error || 'Unable to sign up. Please try again.')
-        return
-      }
-
-      // Persist authenticated user information locally (without password)
-      localStorage.setItem('isAuthenticated', 'true')
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ id: data.id, name: data.name, email: data.email }),
-      )
-
       navigate('/dashboard')
-    } catch (err) {
-      setError('Unable to sign up. Please try again later.')
+    } catch (err: any) {
+      if (err.code === 'auth/email-already-in-use') {
+        setError('Email is already in use. Please sign in instead.')
+      } else if (err.code === 'auth/weak-password') {
+        setError('Password should be at least 6 characters.')
+      } else if (err.code === 'auth/invalid-email') {
+        setError('Invalid email format.')
+      } else {
+        setError('Unable to sign up. Please try again later.')
+      }
     } finally {
       setIsLoading(false)
     }

@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { auth } from './firebase'
 
 // --- NEW ICON IMPORTS ---
 import { FaGuitar, FaDrum, FaMicrophone, FaKeyboard } from 'react-icons/fa';
@@ -122,8 +123,16 @@ function App() {
           const formData = new FormData()
           formData.append('file', file)
 
+          // Get Firebase auth token if user is logged in
+          const headers: HeadersInit = {}
+          if (auth.currentUser) {
+            const token = await auth.currentUser.getIdToken()
+            headers['Authorization'] = `Bearer ${token}`
+          }
+
           const response = await fetch('/api/analyze/', {
             method: 'POST',
+            headers,
             body: formData,
           })
 

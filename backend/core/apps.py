@@ -1,25 +1,54 @@
 from django.apps import AppConfig
 from pathlib import Path
 import logging
+import firebase_admin
+from firebase_admin import firestore
 
 
 class CoreConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'core'
     predictor = None  # Singleton instance
+    db = None  # Firestore client singleton
 
     def ready(self):
-        """Called when Django starts - warm up database connection and model"""
-        from django.db import connection
+        """Called when Django starts - initialize Firebase and Firestore"""
+        logger = logging.getLogger(__name__)
+
+        # Try to initialize Firebase - will fail during collectstatic (no credentials)
+        # but succeed when actually running the server
         try:
-            # Force database connection at startup to avoid first-request timeout
-            connection.ensure_connection()
-        except Exception:
-            pass  # Connection will be retried on first request
+            if not firebase_admin._apps:
+                firebase_admin.initialize_app()
+
+            # Initialize Firestore client
+            CoreConfig.db = firestore.client()
+            logger.info("Firebase initialized successfully")
+        except Exception as e:
+            # This is expected during Docker build (collectstatic) or local dev without credentials
+            logger.info(f"Firebase initialization skipped (will retry on first request): {e}")
+            CoreConfig.db = None
 
         # Start loading model in background thread
         # import threading
         # threading.Thread(target=self.get_predictor, daemon=True).start()
+
+    @classmethod
+    def get_db(cls):
+        """Get Firestore client, initializing if needed"""
+        if cls.db is not None:
+            return cls.db
+
+        logger = logging.getLogger(__name__)
+        try:
+            if not firebase_admin._apps:
+                firebase_admin.initialize_app()
+            cls.db = firestore.client()
+            logger.info("Firestore client initialized on first use")
+            return cls.db
+        except Exception as e:
+            logger.error(f"Failed to initialize Firestore: {e}", exc_info=True)
+            raise
 
     @classmethod
     def get_predictor(cls):
