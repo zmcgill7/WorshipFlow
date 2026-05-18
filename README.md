@@ -23,6 +23,8 @@ https://github.com/user-attachments/assets/88d520e6-3b4a-4ca9-a549-0036becd44d8
 
 Live app: https://worshipflow.site
 
+Note: The app uses Cloud Run scale-to-zero to keep hosting costs low, so the first analysis after the service has been idle can take around a minute while the ML runtime loads.
+
 Worship Flow is designed to automatically identify and classify musical instruments in worship music recordings. Whether you're organizing a music library, analyzing recordings, or building music information retrieval systems, this tool provides fast instrument classification from uploaded audio.
 
 The system uses transfer learning with Google's YAMNet (a pre-trained audio classification model) as a feature extractor, combined with a custom classification head trained specifically on worship music instruments.
