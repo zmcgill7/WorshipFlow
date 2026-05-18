@@ -6,7 +6,6 @@ import tensorflow as tf
 import tensorflow_hub as hub
 from pathlib import Path
 from typing import Dict, List, Tuple
-import pandas as pd
 from datetime import datetime
 
 # ============================================================================
@@ -280,6 +279,7 @@ def format_results_table(results: List[Dict]) -> None:
 
 def save_results_csv(results: List[Dict], output_path: str) -> None:
     """Save results to CSV file"""
+    import pandas as pd
 
     # Prepare data
     rows = []

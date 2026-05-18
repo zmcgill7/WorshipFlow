@@ -53,6 +53,7 @@ function History() {
   const [selectedInstruments, setSelectedInstruments] = useState<string[]>([])
   const [filterMode, setFilterMode] = useState<'require' | 'exclude'>('require')
   const [userName, setUserName] = useState<string | null>(null)
+  const [authReady, setAuthReady] = useState(false)
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -61,14 +62,16 @@ function History() {
       } else {
         setUserName(null)
       }
+      setAuthReady(true)
     })
 
     return () => unsubscribe()
   }, [])
 
   useEffect(() => {
+    if (!authReady) return
     fetchHistory()
-  }, [selectedInstruments, filterMode])
+  }, [authReady, selectedInstruments, filterMode])
 
   async function fetchHistory() {
     setLoading(true)
@@ -85,10 +88,13 @@ function History() {
 
       // Get Firebase auth token
       const headers: HeadersInit = {}
-      if (auth.currentUser) {
-        const token = await auth.currentUser.getIdToken()
-        headers['Authorization'] = `Bearer ${token}`
+      const user = auth.currentUser
+      if (!user) {
+        setError('Please sign in to view history')
+        return
       }
+      const token = await user.getIdToken()
+      headers['Authorization'] = `Bearer ${token}`
 
       const response = await fetch(`/api/history/?${params.toString()}`, {
         method: 'GET',

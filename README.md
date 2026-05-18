@@ -1,6 +1,6 @@
 # Worship Flow
 
-An intelligent deep learning system for classifying musical instruments commonly used in worship music. Built on YAMNet embeddings and trained on the NSynth dataset, this classifier can identify 7 different instrument categories from audio recordings.
+An intelligent deep learning system for classifying musical instruments commonly used in worship music. Built on YAMNet embeddings and trained with TensorFlow, this project includes both the model training workflow and a hosted full-stack web app for analyzing uploaded audio.
 
 ## Table of Contents
 
@@ -21,20 +21,24 @@ An intelligent deep learning system for classifying musical instruments commonly
 
 https://github.com/user-attachments/assets/88d520e6-3b4a-4ca9-a549-0036becd44d8
 
-Worship Flow is designed to automatically identify and classify musical instruments in worship music recordings. Whether you're organizing a music library, analyzing recordings, or building music information retrieval systems, this tool provides accurate, fast instrument classification.
+Live app: https://worshipflow.site
+
+Worship Flow is designed to automatically identify and classify musical instruments in worship music recordings. Whether you're organizing a music library, analyzing recordings, or building music information retrieval systems, this tool provides fast instrument classification from uploaded audio.
 
 The system uses transfer learning with Google's YAMNet (a pre-trained audio classification model) as a feature extractor, combined with a custom classification head trained specifically on worship music instruments.
 
+The production app uses React, Firebase Authentication, Django, Firestore, and Cloud Run. I keep it hosted cheaply by using Cloud Run scale-to-zero and storing only lightweight analysis history in Firestore.
+
 ## Features
 
-- **7 Instrument Categories**: Classifies guitar, bass, keyboard, strings, brass, reeds, and vocals
+- **7 Instrument Categories**: Classifies guitar, bass, keyboard, drums, strings, brass, and vocals
 - **Transfer Learning**: Leverages YAMNet's powerful audio embeddings
-- **Fast Inference**: Processes audio files in seconds
-- **Batch Processing**: Handle multiple files at once
+- **Web Upload Flow**: Analyze `.mp3`, `.mp4`, and `.wav` files from the browser
+- **User History**: Firebase Authentication and Firestore store previous analysis results per user
 - **Easy Dataset Management**: One-time extraction, reusable splits
 - **Comprehensive Evaluation**: Confusion matrices, classification reports, and accuracy metrics
 - **TensorBoard Integration**: Visualize training progress
-- **Standalone Scripts**: No complex dependencies or external modules
+- **Production Deployment**: Dockerized Django/React app deployed to Cloud Run
 
 ## Instrument Categories
 
@@ -45,10 +49,10 @@ The model classifies instruments into 7 categories:
 | **Guitar** | Acoustic & Electric Guitars | Rhythm guitar, lead guitar |
 | **Bass** | Bass Guitars | Electric bass, acoustic bass |
 | **Keyboard** | Piano, Organ, Synth, Mallet | Grand piano, Hammond organ, synthesizers |
-| **String** | Orchestral Strings | Violin, cello, viola |
+| **Drums** | Drum Kit & Percussion | Kick, snare, cymbals |
+| **Strings** | Orchestral Strings | Violin, cello, viola |
 | **Brass** | Brass Instruments | Trumpet, trombone, French horn |
-| **Reed** | Woodwind Instruments | Saxophone, flute, clarinet |
-| **Vocal** | Voice | Lead vocals, backing vocals, choir |
+| **Vocals** | Voice | Lead vocals, backing vocals, choir |
 
 ## Requirements
 
@@ -74,8 +78,8 @@ tqdm>=4.64.0
 ### 1. Clone or Download the Repository
 
 ```bash
-git clone https://github.com/yourusername/worship-flow.git
-cd worship-flow
+git clone https://github.com/zmcgill7/WorshipFlow.git
+cd WorshipFlow
 ```
 
 ### 2. Create Virtual Environment (Recommended)
@@ -114,7 +118,7 @@ wget http://download.magenta.tensorflow.org/datasets/nsynth/nsynth-train.jsonwav
 tar -xzf nsynth-train.jsonwav.tar.gz
 
 # 3. Organize dataset into train/val/test splits
-python nsynth_extractor.py \
+python training/utils/nsynth_extractor.py \
     --nsynth_dir ./nsynth-train \
     --output_dir ./nsynth-splits \
     --train_samples 10000 \
@@ -125,9 +129,9 @@ python nsynth_extractor.py \
 ### Train the Model (30-60 minutes)
 
 ```bash
-python train_standalone.py \
+python training/train.py \
     --splits_dir ./nsynth-splits \
-    --output_dir ./models/worship_flow \
+    --output_dir ./training/models/worship_flow \
     --epochs 30 \
     --batch_size 32
 ```
@@ -135,12 +139,10 @@ python train_standalone.py \
 ### Run Inference
 
 ```bash
-python worship_flow_predictor.py \
-    --model ./models/worship_flow/worship_flow_final.keras \
-    --config ./models/worship_flow/training_results.json \
-    --audio your_audio_file.wav \
-    --top_k 3
+python training/inference/predict_v2.py
 ```
+
+The deployed Django API uses the same inference approach from `backend/core/model_utils/predict_v2.py`.
 
 ## Detailed Workflow
 
@@ -149,7 +151,7 @@ python worship_flow_predictor.py \
 The NSynth dataset is large (73GB) and takes time to process. We extract and organize it **once**, then reuse the organized splits for training.
 
 ```bash
-python nsynth_extractor.py \
+python training/utils/nsynth_extractor.py \
     --nsynth_dir ./nsynth-train \
     --output_dir ./nsynth-splits \
     --train_samples 10000 \
@@ -191,9 +193,9 @@ nsynth-splits/
 Train the classifier using the organized dataset:
 
 ```bash
-python train_standalone.py \
+python training/train.py \
     --splits_dir ./nsynth-splits \
-    --output_dir ./models/worship_flow \
+    --output_dir ./training/models/worship_flow \
     --epochs 30 \
     --batch_size 32 \
     --learning_rate 0.001
@@ -216,7 +218,7 @@ python train_standalone.py \
 
 **Output:**
 ```
-models/worship_flow/
+training/models/worship_flow/
 ├── worship_flow_final.keras       # Trained model
 ├── training_results.json          # Training metrics
 ├── evaluation_results.json        # Confusion matrix & report
@@ -228,99 +230,62 @@ models/worship_flow/
 
 **Monitor Training:**
 ```bash
-tensorboard --logdir ./models/worship_flow/logs
+tensorboard --logdir ./training/models/worship_flow/logs
 ```
 Then open http://localhost:6006 in your browser.
 
 ### Step 3: Inference / Prediction
 
-Use the trained model to classify instruments in new audio files:
+Use the trained model to classify instruments in new audio files. The web app calls the Django endpoint at `/api/analyze/`, which uses `backend/core/model_utils/predict_v2.py`.
 
-#### Single File Prediction
+#### Production API Flow
 
 ```bash
-python worship_flow_predictor.py \
-    --model ./models/worship_flow/worship_flow_final.keras \
-    --config ./models/worship_flow/training_results.json \
-    --audio song.wav \
-    --top_k 3
+curl -X POST https://worshipflow.site/api/analyze/ \
+    -H "Authorization: Bearer <firebase-id-token>" \
+    -F "file=@song.wav"
 ```
 
 **Output:**
-```
-SINGLE FILE PREDICTION
-================================================================================
-File: song.wav
-
-Predictions:
-  1. guitar        87.32% ████████████████████████████████████
-  2. keyboard      8.15%  ███
-  3. bass          3.21%  █
-```
-
-#### Batch Prediction
-
-Create a text file with audio paths (one per line):
-
-```txt
-# audio_list.txt
-songs/song1.wav
-songs/song2.wav
-songs/song3.wav
-```
-
-Run batch prediction:
-
-```bash
-python worship_flow_predictor.py \
-    --model ./models/worship_flow/worship_flow_final.keras \
-    --config ./models/worship_flow/training_results.json \
-    --audio_list audio_list.txt \
-    --top_k 3 \
-    --output predictions.json
-```
-
-#### Evaluate on Test Set
-
-```bash
-python worship_flow_predictor.py \
-    --model ./models/worship_flow/worship_flow_final.keras \
-    --config ./models/worship_flow/training_results.json \
-    --evaluate_split ./nsynth-splits \
-    --split_name test \
-    --output test_results.json
+```json
+{
+  "results": [
+    {
+      "filename": "song.wav",
+      "predictions": [
+        { "instrument": "keyboard", "confidence": 0.75 },
+        { "instrument": "guitar", "confidence": 0.68 }
+      ]
+    }
+  ]
+}
 ```
 
 ## Project Structure
 
 ```
-worship-flow/
+WorshipFlow/
 │
 ├── README.md                      # This file
-├── requirements.txt               # Python dependencies
+├── Dockerfile                     # Production image for frontend + backend
+├── cloudbuild.yaml                # Cloud Build / Cloud Run deployment
 │
-├── nsynth_extractor.py           # Dataset extraction script
-├── train_standalone.py           # Training script (standalone)
-├── worship_flow_predictor.py     # Inference script
+├── frontend/                      # React + TypeScript app
+│   └── src/
 │
-├── dataset_loader.py             # (Optional) Modular dataset loader
-├── train_worship_flow.py         # (Optional) Modular training script
+├── backend/                       # Django API and production model
+│   ├── core/
+│   │   ├── views.py               # Analyze and history endpoints
+│   │   ├── middleware.py          # Firebase token auth
+│   │   └── model_utils/           # Keras model + inference utilities
+│   └── requirements.txt
 │
-├── nsynth-train/                 # Downloaded NSynth dataset
-│   ├── audio/
-│   └── examples.json
-│
-├── nsynth-splits/                # Organized dataset splits
-│   ├── train/
-│   ├── validation/
-│   ├── test/
-│   └── config.json
-│
-└── models/                       # Trained models
-    └── worship_flow/
-        ├── worship_flow_final.keras
-        ├── training_results.json
-        └── ...
+└── training/                      # Training scripts, notebooks, and experiments
+    ├── train.py
+    ├── train_medleydb.py
+    ├── inference/
+    ├── models/
+    └── utils/
 ```
 
 ## Usage Examples
@@ -328,9 +293,9 @@ worship-flow/
 ### Example 1: Training with Custom Parameters
 
 ```bash
-python train_standalone.py \
+python training/train.py \
     --splits_dir ./nsynth-splits \
-    --output_dir ./models/my_custom_model \
+    --output_dir ./training/models/my_custom_model \
     --epochs 50 \
     --batch_size 64 \
     --learning_rate 0.0005
@@ -340,7 +305,7 @@ python train_standalone.py \
 
 ```bash
 # Extract smaller dataset for quick testing
-python nsynth_extractor.py \
+python training/utils/nsynth_extractor.py \
     --nsynth_dir ./nsynth-train \
     --output_dir ./nsynth-splits-small \
     --train_samples 1000 \
@@ -348,76 +313,38 @@ python nsynth_extractor.py \
     --test_samples 100
 
 # Train quickly
-python train_standalone.py \
+python training/train.py \
     --splits_dir ./nsynth-splits-small \
-    --output_dir ./models/test_model \
+    --output_dir ./training/models/test_model \
     --epochs 10 \
     --batch_size 32
 ```
 
-### Example 3: Python API Usage
+### Example 3: Deploy to Cloud Run
 
-```python
-from worship_flow_predictor import WorshipFlowPredictor
-
-# Initialize predictor
-predictor = WorshipFlowPredictor(
-    model_path='./models/worship_flow/worship_flow_final.keras',
-    config_path='./models/worship_flow/training_results.json'
-)
-
-# Predict single file
-results = predictor.predict('audio.wav', top_k=3)
-
-for i, pred in enumerate(results, 1):
-    print(f"{i}. {pred['instrument']}: {pred['confidence']:.2%}")
-
-# Predict multiple files
-audio_files = ['song1.wav', 'song2.wav', 'song3.wav']
-batch_results = predictor.predict_batch(audio_files, top_k=3)
-
-for audio, results in zip(audio_files, batch_results):
-    print(f"\n{audio}:")
-    for pred in results[:3]:
-        print(f"  - {pred['instrument']}: {pred['confidence']:.2%}")
-```
-
-### Example 4: Evaluate Custom Dataset
-
-```python
-from worship_flow_predictor import WorshipFlowPredictor
-
-predictor = WorshipFlowPredictor(
-    model_path='./models/worship_flow/worship_flow_final.keras',
-    config_path='./models/worship_flow/training_results.json'
-)
-
-# Evaluate on test split
-results = predictor.evaluate_on_split(
-    split_dir='./nsynth-splits',
-    split_name='test'
-)
-
-print(f"Test Accuracy: {results['accuracy']:.2%}")
+```bash
+gcloud builds submit --config cloudbuild.yaml --project worship-flow-479220 .
 ```
 
 ## Model Performance
 
-### Expected Performance (10K training samples)
+### Current Checked-In Production Model
 
 | Metric | Value |
 |--------|-------|
-| Training Accuracy | ~85-90% |
-| Validation Accuracy | ~60-70% |
-| Test Accuracy | ~60-70% |
-| Training Time | 30-60 minutes (GPU) |
-| Inference Time | <1 second per file |
+| Sample F1 | 0.920 |
+| Jaccard Score | 0.882 |
+| Hamming Loss | 0.070 |
+| Epochs | 50 |
+| Training Samples | 919 |
+| Validation Samples | 114 |
+| Test Samples | 116 |
 
 ### Performance Tips
 
 **For Better Accuracy:**
-- Increase training samples (20K-50K)
-- Train for more epochs (50-100)
+- Increase training samples
+- Train for more epochs
 - Use data augmentation
 - Fine-tune learning rate
 
@@ -427,16 +354,13 @@ print(f"Test Accuracy: {results['accuracy']:.2%}")
 - Use smaller dataset for testing
 
 **For Faster Inference:**
+- Keep the Cloud Run instance warm for demos
 - Batch multiple predictions together
-- Use GPU if available
-- Pre-extract features for repeated predictions
+- Pre-bundle YAMNet in the image so it is not downloaded at request time
 
 ## Troubleshooting
 
 ### Common Issues
-
-**Issue: "No module named 'dataset_loader'"**
-- **Solution**: Use `train_standalone.py` instead, which has everything built-in
 
 **Issue: Out of memory during training**
 - **Solution**: Reduce batch size: `--batch_size 16` or `--batch_size 8`
@@ -448,7 +372,10 @@ print(f"Test Accuracy: {results['accuracy']:.2%}")
 - **Solution**: Increase training samples and epochs, check data quality
 
 **Issue: "Config not found" error**
-- **Solution**: Ensure you ran `nsynth_extractor.py` first to create organized splits
+- **Solution**: Ensure you ran `training/utils/nsynth_extractor.py` first to create organized splits
+
+**Issue: History fails in production**
+- **Solution**: Ensure `FIRESTORE_DATABASE_ID` points to the named Firestore database and production is deployed with `DJANGO_DEBUG=False`
 
 ## Contributing
 
@@ -457,8 +384,8 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ### Development Setup
 
 ```bash
-git clone https://github.com/yourusername/worship-flow.git
-cd worship-flow
+git clone https://github.com/zmcgill7/WorshipFlow.git
+cd WorshipFlow
 python -m venv venv
 source venv/bin/activate  # or venv\Scripts\activate on Windows
 pip install -r requirements.txt
@@ -468,8 +395,8 @@ pip install -r requirements.txt
 
 ```bash
 # Quick test with small dataset
-python nsynth_extractor.py --nsynth_dir ./nsynth-train --output_dir ./test-splits --train_samples 100 --val_samples 10 --test_samples 10
-python train_standalone.py --splits_dir ./test-splits --output_dir ./test-models --epochs 5
+python training/utils/nsynth_extractor.py --nsynth_dir ./nsynth-train --output_dir ./test-splits --train_samples 100 --val_samples 10 --test_samples 10
+python training/train.py --splits_dir ./test-splits --output_dir ./test-models --epochs 5
 ```
 
 ## License
@@ -485,8 +412,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Future Enhancements
 
 - [ ] Real-time audio classification
-- [ ] Multi-instrument detection (detect multiple instruments in one audio)
-- [ ] Web interface for easy predictions
 - [ ] Mobile app integration
 - [ ] Extended instrument categories
 - [ ] Audio segmentation and timestamping

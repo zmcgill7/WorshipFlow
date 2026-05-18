@@ -1,8 +1,10 @@
 from django.apps import AppConfig
 from pathlib import Path
 import logging
+import os
 import firebase_admin
 from firebase_admin import firestore
+from google.cloud import firestore as google_firestore
 
 
 class CoreConfig(AppConfig):
@@ -10,6 +12,13 @@ class CoreConfig(AppConfig):
     name = 'core'
     predictor = None  # Singleton instance
     db = None  # Firestore client singleton
+
+    @staticmethod
+    def firestore_client():
+        database_id = os.environ.get('FIRESTORE_DATABASE_ID')
+        if database_id:
+            return google_firestore.Client(database=database_id)
+        return firestore.client()
 
     def ready(self):
         """Called when Django starts - initialize Firebase and Firestore"""
@@ -22,7 +31,7 @@ class CoreConfig(AppConfig):
                 firebase_admin.initialize_app()
 
             # Initialize Firestore client
-            CoreConfig.db = firestore.client()
+            CoreConfig.db = self.firestore_client()
             logger.info("Firebase initialized successfully")
         except Exception as e:
             # This is expected during Docker build (collectstatic) or local dev without credentials
@@ -43,7 +52,7 @@ class CoreConfig(AppConfig):
         try:
             if not firebase_admin._apps:
                 firebase_admin.initialize_app()
-            cls.db = firestore.client()
+            cls.db = cls.firestore_client()
             logger.info("Firestore client initialized on first use")
             return cls.db
         except Exception as e:
